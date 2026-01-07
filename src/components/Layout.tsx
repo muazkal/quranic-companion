@@ -29,7 +29,7 @@ export function Layout({ children }: LayoutProps) {
             <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
               <BookOpen className="w-4 h-4 text-primary" />
             </div>
-            <span className="font-serif text-xl font-semibold">Hifz</span>
+            <span className="font-serif text-xl font-semibold">راجع | Revise</span>
           </Link>
           
           {/* Desktop Navigation */}

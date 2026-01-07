@@ -48,7 +48,7 @@ export function AuthForm() {
             <BookOpen className="w-8 h-8 text-primary" />
           </div>
           <div>
-            <CardTitle className="text-2xl font-serif">Hifz</CardTitle>
+            <CardTitle className="text-2xl font-serif">راجع | Revise</CardTitle>
             <CardDescription className="mt-2">
               {isLogin ? 'Sign in to continue your memorization journey' : 'Create an account to start memorizing'}
             </CardDescription>

@@ -110,7 +110,7 @@ export function Dashboard() {
       {/* Welcome Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-serif font-semibold">Assalamu Alaikum</h1>
+          <h1 className="text-2xl font-serif font-semibold">السلام عليكم ورحمة الله وبركاته</h1>
           <p className="text-muted-foreground">Ready for your daily memorization?</p>
         </div>
         <div className="flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-full">
