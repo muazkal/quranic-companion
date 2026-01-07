@@ -1,13 +1,37 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { Routes, Route } from 'react-router-dom';
+import { useAuthContext } from '@/contexts/AuthContext';
+import { AuthForm } from '@/components/AuthForm';
+import { Layout } from '@/components/Layout';
+import { Dashboard } from '@/pages/Dashboard';
+import { Review } from '@/pages/Review';
+import { LibraryPage } from '@/pages/LibraryPage';
+import { AddPage } from '@/pages/AddPage';
+import { Loader2 } from 'lucide-react';
 
 const Index = () => {
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
+  const { user, loading } = useAuthContext();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
-    </div>
+    );
+  }
+
+  if (!user) {
+    return <AuthForm />;
+  }
+
+  return (
+    <Layout>
+      <Routes>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/review" element={<Review />} />
+        <Route path="/library" element={<LibraryPage />} />
+        <Route path="/add" element={<AddPage />} />
+      </Routes>
+    </Layout>
   );
 };
 

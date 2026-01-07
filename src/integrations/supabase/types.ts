@@ -14,7 +14,122 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      memorization_items: {
+        Row: {
+          arabic_text: string
+          category: string | null
+          created_at: string
+          difficulty: Database["public"]["Enums"]["difficulty_level"]
+          easiness_factor: number
+          id: string
+          interval: number
+          item_type: Database["public"]["Enums"]["item_type"]
+          next_review_date: string
+          repetitions: number
+          source: string | null
+          translation: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          arabic_text: string
+          category?: string | null
+          created_at?: string
+          difficulty?: Database["public"]["Enums"]["difficulty_level"]
+          easiness_factor?: number
+          id?: string
+          interval?: number
+          item_type?: Database["public"]["Enums"]["item_type"]
+          next_review_date?: string
+          repetitions?: number
+          source?: string | null
+          translation?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          arabic_text?: string
+          category?: string | null
+          created_at?: string
+          difficulty?: Database["public"]["Enums"]["difficulty_level"]
+          easiness_factor?: number
+          id?: string
+          interval?: number
+          item_type?: Database["public"]["Enums"]["item_type"]
+          next_review_date?: string
+          repetitions?: number
+          source?: string | null
+          translation?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          current_streak: number
+          display_name: string | null
+          id: string
+          last_review_date: string | null
+          longest_streak: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_streak?: number
+          display_name?: string | null
+          id?: string
+          last_review_date?: string | null
+          longest_streak?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_streak?: number
+          display_name?: string | null
+          id?: string
+          last_review_date?: string | null
+          longest_streak?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      review_history: {
+        Row: {
+          id: string
+          item_id: string
+          rating: number
+          reviewed_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          item_id: string
+          rating: number
+          reviewed_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          item_id?: string
+          rating?: number
+          reviewed_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "review_history_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "memorization_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +138,8 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      difficulty_level: "easy" | "medium" | "hard"
+      item_type: "hadith" | "quran" | "scholar"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +266,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      difficulty_level: ["easy", "medium", "hard"],
+      item_type: ["hadith", "quran", "scholar"],
+    },
   },
 } as const

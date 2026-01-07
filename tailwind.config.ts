@@ -108,17 +108,21 @@ export default {
   				'Times',
   				'serif'
   			],
-  			mono: [
-  				'Space Mono',
-  				'ui-monospace',
-  				'SFMono-Regular',
-  				'Menlo',
-  				'Monaco',
-  				'Consolas',
-  				'Liberation Mono',
-  				'Courier New',
-  				'monospace'
-  			]
+			mono: [
+				'Space Mono',
+				'ui-monospace',
+				'SFMono-Regular',
+				'Menlo',
+				'Monaco',
+				'Consolas',
+				'Liberation Mono',
+				'Courier New',
+				'monospace'
+			],
+			arabic: [
+				'Amiri',
+				'serif'
+			]
   		},
   		boxShadow: {
   			'2xs': 'var(--shadow-2xs)',
