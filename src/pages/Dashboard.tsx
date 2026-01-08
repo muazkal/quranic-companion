@@ -21,6 +21,10 @@ interface MemorizationItem {
   repetitions: number;
   easiness_factor: number;
   next_review_date: string;
+  narrator: string | null;
+  speaker_name: string | null;
+  surah_name: string | null;
+  ayah_reference: string | null;
 }
 
 interface Profile {

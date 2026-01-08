@@ -18,6 +18,10 @@ interface ItemCardProps {
     repetitions: number;
     easiness_factor: number;
     next_review_date: string;
+    narrator: string | null;
+    speaker_name: string | null;
+    surah_name: string | null;
+    ayah_reference: string | null;
   };
   onDelete?: (id: string) => void;
 }
@@ -31,7 +35,7 @@ const typeIcons = {
 const typeLabels = {
   hadith: 'Hadith',
   quran: "Qur'an",
-  scholar: 'Scholar',
+  scholar: 'Mawqūf',
 };
 
 const statusColors = {
@@ -53,6 +57,24 @@ export function ItemCard({ item, onDelete }: ItemCardProps) {
   const status = getItemStatus(item.repetitions, Number(item.easiness_factor));
   const nextReview = new Date(item.next_review_date);
   const isOverdue = nextReview <= new Date();
+
+  // Get context info based on type
+  const getContextInfo = () => {
+    switch (item.item_type) {
+      case 'hadith':
+        return item.narrator;
+      case 'quran':
+        return item.surah_name && item.ayah_reference 
+          ? `${item.surah_name} : ${item.ayah_reference}` 
+          : null;
+      case 'scholar':
+        return item.speaker_name;
+      default:
+        return null;
+    }
+  };
+
+  const contextInfo = getContextInfo();
 
   return (
     <Card className="group hover:shadow-md transition-shadow">
@@ -78,6 +100,13 @@ export function ItemCard({ item, onDelete }: ItemCardProps) {
             </Button>
           )}
         </div>
+
+        {/* Context info (narrator/surah/speaker) */}
+        {contextInfo && (
+          <p className="text-sm font-medium text-foreground">
+            {contextInfo}
+          </p>
+        )}
 
         <p
           className="font-arabic text-xl leading-[1.8] line-clamp-2"

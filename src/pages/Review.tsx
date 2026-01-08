@@ -18,6 +18,10 @@ interface MemorizationItem {
   item_type: 'hadith' | 'quran' | 'scholar';
   source: string | null;
   category: string | null;
+  narrator: string | null;
+  speaker_name: string | null;
+  surah_name: string | null;
+  ayah_reference: string | null;
   repetitions: number;
   easiness_factor: number;
   interval: number;
@@ -66,14 +70,14 @@ export function Review() {
     setSubmitting(true);
 
     try {
-      // Calculate next review
+      // Calculate next review using Anki-style SM-2
       const result = calculateNextReview(rating, {
         repetitions: currentItem.repetitions,
         easinessFactor: Number(currentItem.easiness_factor),
         interval: currentItem.interval,
       });
 
-      // Update the item
+      // Update the item immediately
       const { error: updateError } = await supabase
         .from('memorization_items')
         .update({
@@ -86,7 +90,7 @@ export function Review() {
 
       if (updateError) throw updateError;
 
-      // Record the review
+      // Record the review in history
       const { error: historyError } = await supabase
         .from('review_history')
         .insert({
