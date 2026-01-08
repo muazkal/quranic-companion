@@ -16,7 +16,7 @@ interface MemorizationItem {
   translation: string | null;
   item_type: 'hadith' | 'quran' | 'scholar';
   source: string | null;
-  category: string | null;
+  category: string[] | null;
   difficulty: 'easy' | 'medium' | 'hard';
   repetitions: number;
   easiness_factor: number;

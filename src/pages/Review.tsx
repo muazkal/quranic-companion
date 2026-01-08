@@ -17,7 +17,7 @@ interface MemorizationItem {
   translation: string | null;
   item_type: 'hadith' | 'quran' | 'scholar';
   source: string | null;
-  category: string | null;
+  category: string[] | null;
   narrator: string | null;
   speaker_name: string | null;
   surah_name: string | null;
