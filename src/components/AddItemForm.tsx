@@ -15,20 +15,59 @@ type ItemType = 'hadith' | 'quran' | 'scholar';
 type DifficultyLevel = 'easy' | 'medium' | 'hard';
 
 export function AddItemForm() {
-  const [arabicText, setArabicText] = useState('');
-  const [translation, setTranslation] = useState('');
   const [itemType, setItemType] = useState<ItemType>('hadith');
-  const [source, setSource] = useState('');
-  const [category, setCategory] = useState('');
   const [difficulty, setDifficulty] = useState<DifficultyLevel>('medium');
   const [loading, setLoading] = useState(false);
+  
+  // Common fields
+  const [arabicText, setArabicText] = useState('');
+  const [translation, setTranslation] = useState('');
+  const [source, setSource] = useState('');
+  const [category, setCategory] = useState('');
+  
+  // Hadith-specific
+  const [narrator, setNarrator] = useState('');
+  
+  // Scholar/Mawquf-specific
+  const [speakerName, setSpeakerName] = useState('');
+  
+  // Quran-specific
+  const [surahName, setSurahName] = useState('');
+  const [ayahReference, setAyahReference] = useState('');
+  
   const { user } = useAuthContext();
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  const resetForm = () => {
+    setArabicText('');
+    setTranslation('');
+    setSource('');
+    setCategory('');
+    setNarrator('');
+    setSpeakerName('');
+    setSurahName('');
+    setAyahReference('');
+    setDifficulty('medium');
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
+
+    // Validation based on type
+    if (itemType === 'hadith' && !narrator.trim()) {
+      toast({ title: 'Narrator required', description: 'Please enter the narrator for this hadith.', variant: 'destructive' });
+      return;
+    }
+    if (itemType === 'scholar' && !speakerName.trim()) {
+      toast({ title: 'Speaker required', description: 'Please enter the speaker name.', variant: 'destructive' });
+      return;
+    }
+    if (itemType === 'quran' && (!surahName.trim() || !ayahReference.trim())) {
+      toast({ title: 'Surah and Ayah required', description: 'Please enter both surah name and ayah reference.', variant: 'destructive' });
+      return;
+    }
 
     setLoading(true);
     try {
@@ -40,19 +79,16 @@ export function AddItemForm() {
         source: source.trim() || null,
         category: category.trim() || null,
         difficulty,
+        narrator: itemType === 'hadith' ? narrator.trim() : null,
+        speaker_name: itemType === 'scholar' ? speakerName.trim() : null,
+        surah_name: itemType === 'quran' ? surahName.trim() : null,
+        ayah_reference: itemType === 'quran' ? ayahReference.trim() : null,
       });
 
       if (error) throw error;
 
       toast({ title: 'Item added!', description: 'Your memorization item has been saved.' });
-      
-      // Reset form
-      setArabicText('');
-      setTranslation('');
-      setSource('');
-      setCategory('');
-      setDifficulty('medium');
-      
+      resetForm();
       navigate('/library');
     } catch (error: any) {
       toast({
@@ -79,30 +115,7 @@ export function AddItemForm() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="arabicText">Arabic Text *</Label>
-              <Textarea
-                id="arabicText"
-                value={arabicText}
-                onChange={(e) => setArabicText(e.target.value)}
-                placeholder="أدخل النص العربي هنا..."
-                className="min-h-32 font-arabic text-xl leading-loose text-right"
-                dir="rtl"
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="translation">Translation (optional)</Label>
-              <Textarea
-                id="translation"
-                value={translation}
-                onChange={(e) => setTranslation(e.target.value)}
-                placeholder="Enter the translation..."
-                className="min-h-24"
-              />
-            </div>
-
+            {/* Type Selection */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="itemType">Type</Label>
@@ -113,7 +126,7 @@ export function AddItemForm() {
                   <SelectContent>
                     <SelectItem value="hadith">Hadith</SelectItem>
                     <SelectItem value="quran">Qur'an</SelectItem>
-                    <SelectItem value="scholar">Scholar Saying</SelectItem>
+                    <SelectItem value="scholar">Mawqūf / Maqṭū' (Scholar)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -133,24 +146,115 @@ export function AddItemForm() {
               </div>
             </div>
 
+            {/* Type-specific fields */}
+            {itemType === 'hadith' && (
+              <div className="space-y-2">
+                <Label htmlFor="narrator">Narrator *</Label>
+                <Input
+                  id="narrator"
+                  value={narrator}
+                  onChange={(e) => setNarrator(e.target.value)}
+                  placeholder="e.g., Abu Hurayrah, Ibn 'Umar, 'Aa'ishah"
+                  required
+                />
+              </div>
+            )}
+
+            {itemType === 'scholar' && (
+              <div className="space-y-2">
+                <Label htmlFor="speakerName">Speaker Name *</Label>
+                <Input
+                  id="speakerName"
+                  value={speakerName}
+                  onChange={(e) => setSpeakerName(e.target.value)}
+                  placeholder="e.g., Ibn Taymiyyah, Ibn al-Qayyim, al-Hasan al-Basri"
+                  required
+                />
+              </div>
+            )}
+
+            {itemType === 'quran' && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="surahName">Surah Name *</Label>
+                  <Input
+                    id="surahName"
+                    value={surahName}
+                    onChange={(e) => setSurahName(e.target.value)}
+                    placeholder="e.g., Al-Baqarah, Al-Fatihah"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="ayahReference">Ayah Number/Range *</Label>
+                  <Input
+                    id="ayahReference"
+                    value={ayahReference}
+                    onChange={(e) => setAyahReference(e.target.value)}
+                    placeholder="e.g., 255 or 1-5"
+                    required
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Arabic Text - Main content */}
             <div className="space-y-2">
-              <Label htmlFor="source">Source (optional)</Label>
+              <Label htmlFor="arabicText">
+                {itemType === 'hadith' ? 'Matn / Nass' : itemType === 'quran' ? 'Ayah Text' : 'Text'} *
+              </Label>
+              <Textarea
+                id="arabicText"
+                value={arabicText}
+                onChange={(e) => setArabicText(e.target.value)}
+                placeholder="أدخل النص العربي هنا..."
+                className="min-h-32 font-arabic text-xl leading-loose text-right"
+                dir="rtl"
+                required
+              />
+            </div>
+
+            {/* Source */}
+            <div className="space-y-2">
+              <Label htmlFor="source">Source</Label>
               <Input
                 id="source"
                 value={source}
                 onChange={(e) => setSource(e.target.value)}
-                placeholder="e.g., Sahih Bukhari, Surah Al-Baqarah:255"
+                placeholder={
+                  itemType === 'hadith' 
+                    ? "e.g., Sahih al-Bukhari, Sahih Muslim, Musnad Ahmad" 
+                    : itemType === 'scholar'
+                    ? "e.g., Majmu' al-Fatawa, Madarij al-Salikin"
+                    : "Optional source reference"
+                }
               />
             </div>
 
+            {/* Translation */}
             <div className="space-y-2">
-              <Label htmlFor="category">Category / Topic (optional)</Label>
+              <Label htmlFor="translation">Translation (optional)</Label>
+              <Textarea
+                id="translation"
+                value={translation}
+                onChange={(e) => setTranslation(e.target.value)}
+                placeholder="Enter the translation..."
+                className="min-h-24"
+              />
+            </div>
+
+            {/* Category - for filtering only */}
+            <div className="space-y-2">
+              <Label htmlFor="category">Category (for filtering only)</Label>
               <Input
                 id="category"
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
                 placeholder="e.g., Prayer, Patience, Aqeedah"
               />
+              <p className="text-xs text-muted-foreground">
+                Categories are used for organizing your library. They will not be shown during review.
+              </p>
             </div>
 
             <Button type="submit" className="w-full" disabled={loading}>

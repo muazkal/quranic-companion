@@ -1,6 +1,6 @@
-// SM-2 Spaced Repetition Algorithm Implementation
+// Anki-style SM-2 Spaced Repetition Algorithm Implementation
 
-export type RecallRating = 0 | 1 | 2 | 3; // 0=forgot, 1=hard, 2=good, 3=easy
+export type RecallRating = 0 | 1 | 2 | 3; // 0=Again, 1=Hard, 2=Good, 3=Easy
 
 export interface SpacedRepetitionData {
   repetitions: number;
@@ -12,9 +12,15 @@ export interface SpacedRepetitionResult extends SpacedRepetitionData {
   nextReviewDate: Date;
 }
 
+// Minimum ease factor (Anki default is 1.3)
+const MIN_EASE_FACTOR = 1.3;
+
+// Learning phase intervals in minutes (converted to days for storage)
+const LEARNING_STEPS = [1, 10]; // 1 min, 10 min (simplified for daily review)
+
 /**
- * Calculate the next review date based on the SM-2 algorithm
- * @param rating - 0: forgot, 1: hard, 2: good, 3: easy
+ * Anki-style SM-2 algorithm
+ * @param rating - 0: Again, 1: Hard, 2: Good, 3: Easy
  * @param currentData - Current spaced repetition data
  * @returns Updated spaced repetition data with next review date
  */
@@ -24,44 +30,60 @@ export function calculateNextReview(
 ): SpacedRepetitionResult {
   let { repetitions, easinessFactor, interval } = currentData;
 
-  // Minimum easiness factor is 1.3
-  const minEF = 1.3;
+  // Ensure easiness factor is at least the minimum
+  easinessFactor = Math.max(MIN_EASE_FACTOR, easinessFactor);
 
-  if (rating < 2) {
-    // If forgot or hard, reset repetitions
-    repetitions = 0;
-    interval = 1;
-  } else {
-    // Calculate new interval
-    if (repetitions === 0) {
-      interval = 1;
-    } else if (repetitions === 1) {
-      interval = 6;
-    } else {
-      interval = Math.round(interval * easinessFactor);
-    }
-    repetitions += 1;
-  }
-
-  // Update easiness factor based on rating
-  // EF' = EF + (0.1 - (3 - rating) * (0.08 + (3 - rating) * 0.02))
-  const efChange = 0.1 - (3 - rating) * (0.08 + (3 - rating) * 0.02);
-  easinessFactor = Math.max(minEF, easinessFactor + efChange);
-
-  // Apply rating-specific modifiers
-  if (rating === 3) {
-    // Easy - increase interval by 1.5x
-    interval = Math.round(interval * 1.3);
-  } else if (rating === 1) {
-    // Hard - reduce interval
-    interval = Math.max(1, Math.round(interval * 0.5));
-  } else if (rating === 0) {
-    // Forgot - reset to 1 day
-    interval = 1;
-  }
-
-  // Calculate next review date
   const nextReviewDate = new Date();
+
+  switch (rating) {
+    case 0: // Again - Reset to learning phase
+      repetitions = 0;
+      interval = 1; // Review tomorrow (simplified from minutes for web app)
+      // Decrease ease factor by 0.2 (Anki behavior)
+      easinessFactor = Math.max(MIN_EASE_FACTOR, easinessFactor - 0.2);
+      break;
+
+    case 1: // Hard - Increase interval slightly, decrease ease
+      if (repetitions === 0) {
+        // Still in learning phase
+        interval = 1;
+      } else {
+        // Multiply by 1.2 (Anki hard multiplier)
+        interval = Math.max(1, Math.round(interval * 1.2));
+      }
+      // Decrease ease factor by 0.15 (Anki behavior)
+      easinessFactor = Math.max(MIN_EASE_FACTOR, easinessFactor - 0.15);
+      repetitions += 1;
+      break;
+
+    case 2: // Good - Standard SM-2 progression
+      if (repetitions === 0) {
+        interval = 1; // First successful review: 1 day
+      } else if (repetitions === 1) {
+        interval = 6; // Second successful review: 6 days
+      } else {
+        // Apply ease factor
+        interval = Math.round(interval * easinessFactor);
+      }
+      repetitions += 1;
+      break;
+
+    case 3: // Easy - Aggressive interval increase
+      if (repetitions === 0) {
+        interval = 4; // Skip ahead to 4 days
+      } else if (repetitions === 1) {
+        interval = 10; // Jump to 10 days
+      } else {
+        // Apply ease factor with easy bonus (1.3x multiplier like Anki)
+        interval = Math.round(interval * easinessFactor * 1.3);
+      }
+      // Increase ease factor by 0.15 (Anki behavior)
+      easinessFactor = easinessFactor + 0.15;
+      repetitions += 1;
+      break;
+  }
+
+  // Set next review date
   nextReviewDate.setDate(nextReviewDate.getDate() + interval);
 
   return {
@@ -86,13 +108,37 @@ export function getItemStatus(
 }
 
 /**
- * Get rating label
+ * Get rating label - Anki-style naming
  */
 export function getRatingLabel(rating: RecallRating): string {
   switch (rating) {
-    case 0: return 'Forgot';
+    case 0: return 'Again';
     case 1: return 'Hard';
     case 2: return 'Good';
     case 3: return 'Easy';
   }
+}
+
+/**
+ * Get estimated next interval for each rating option (for UI display)
+ */
+export function getEstimatedIntervals(currentData: SpacedRepetitionData): Record<RecallRating, string> {
+  const results: Record<RecallRating, string> = {} as Record<RecallRating, string>;
+  
+  for (let rating = 0; rating <= 3; rating++) {
+    const result = calculateNextReview(rating as RecallRating, currentData);
+    results[rating as RecallRating] = formatInterval(result.interval);
+  }
+  
+  return results;
+}
+
+/**
+ * Format interval for display
+ */
+function formatInterval(days: number): string {
+  if (days === 1) return '1d';
+  if (days < 30) return `${days}d`;
+  if (days < 365) return `${Math.round(days / 30)}mo`;
+  return `${(days / 365).toFixed(1)}y`;
 }

@@ -17,6 +17,7 @@ export type Database = {
       memorization_items: {
         Row: {
           arabic_text: string
+          ayah_reference: string | null
           category: string | null
           created_at: string
           difficulty: Database["public"]["Enums"]["difficulty_level"]
@@ -24,15 +25,19 @@ export type Database = {
           id: string
           interval: number
           item_type: Database["public"]["Enums"]["item_type"]
+          narrator: string | null
           next_review_date: string
           repetitions: number
           source: string | null
+          speaker_name: string | null
+          surah_name: string | null
           translation: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           arabic_text: string
+          ayah_reference?: string | null
           category?: string | null
           created_at?: string
           difficulty?: Database["public"]["Enums"]["difficulty_level"]
@@ -40,15 +45,19 @@ export type Database = {
           id?: string
           interval?: number
           item_type?: Database["public"]["Enums"]["item_type"]
+          narrator?: string | null
           next_review_date?: string
           repetitions?: number
           source?: string | null
+          speaker_name?: string | null
+          surah_name?: string | null
           translation?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           arabic_text?: string
+          ayah_reference?: string | null
           category?: string | null
           created_at?: string
           difficulty?: Database["public"]["Enums"]["difficulty_level"]
@@ -56,9 +65,12 @@ export type Database = {
           id?: string
           interval?: number
           item_type?: Database["public"]["Enums"]["item_type"]
+          narrator?: string | null
           next_review_date?: string
           repetitions?: number
           source?: string | null
+          speaker_name?: string | null
+          surah_name?: string | null
           translation?: string | null
           updated_at?: string
           user_id?: string
