@@ -1,73 +1,136 @@
-# Welcome to your Lovable project
+# Memorization & Spaced Repetition App
 
-## Project info
+A focused memorization platform for **Hadith**, **Qur’an**, and **Islamic scholarly statements**, built around **Anki-style spaced repetition** and **distraction-free recall**.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+This app is designed for students who want **long-term retention**, not surface-level exposure.
 
-## How can I edit this code?
+---
 
-There are several ways of editing your application.
+## Core Purpose
 
-**Use Lovable**
+- Memorize and retain:
+  - Hadith (with narrator and source)
+  - Qur’anic verses
+  - Mawqūf and Maqṭū‘ statements
+- Review content using **Anki’s SM-2 spaced repetition algorithm**
+- Enforce **active recall**, not passive reading
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+---
 
-Changes made via Lovable will be committed automatically to this repo.
+## Spaced Repetition System
 
-**Use your preferred IDE**
+The app follows an **Anki-style SM-2 algorithm**, not a simplified custom scheduler.
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+Each item tracks:
+- Ease Factor (EF)
+- Interval (days)
+- Repetition count
+- Next review date
+- Review history
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### Review ratings
+- Again  
+- Hard  
+- Good  
+- Easy  
 
-Follow these steps:
+Scheduling behavior mirrors Anki:
+- New items enter a learning phase
+- Failed items reappear sooner
+- Easy items grow aggressively
+- Ease factor is bounded to prevent collapse
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+---
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+## Memorization Item Structure
 
-# Step 3: Install the necessary dependencies.
-npm i
+### Hadith
+- **Narrator** (e.g. Abu Hurayrah, Ibn ‘Umar)
+- **Matn / Nass** (Arabic text)
+- **Source** (e.g. Sahih al-Bukhari, Muslim)
+- Optional translation
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+### Mawqūf / Maqṭū‘
+- **Speaker name**
+- **Text**
+- **Source**
 
-**Edit a file directly in GitHub**
+### Qur’an
+- **Surah name**
+- **Ayah number or range**
+- **Ayah text**
+- Optional translation
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+Each field is intentionally separated to prevent ambiguity and accidental hints.
 
-**Use GitHub Codespaces**
+---
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Categories
 
-## What technologies are used for this project?
+Categories are **structured selections**, not free text.
 
-This project is built with:
+### Available categories
+- Aqeedah  
+- Fiqh  
+- Mustalah Al-Hadith  
+- Tafsir  
+- Manners  
+- Heart-Softener  
+- Hadith  
+- Usool  
+- Al-Fiqh  
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+### Category behavior
+- Optional
+- Select none, one, or multiple
+- Displayed during review as a **contextual hint**
+- Never reveal memorized text
 
-## How can I deploy this project?
+---
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+## Review Experience
 
-## Can I connect a custom domain to my Lovable project?
+- The **main memorized text** is always:
+  - Hidden or blurred by default
+  - Revealed only after user action
 
-Yes, you can!
+### Always visible during review (before reveal)
+- Hadith → Narrator  
+- Mawqūf / Maqṭū‘ → Speaker name  
+- Qur’an → Surah name + Ayah number  
+- Selected categories (as intentional hints)
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+### Hidden until reveal
+- Matn / verse / quote
+- Source
+- Translation
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+This enforces **pure recall** while preserving identity context.
+
+---
+
+## Design Principles
+
+- No social features
+- No feeds
+- No notifications designed for engagement loops
+- Minimal UI
+- Daily-use focused
+- Recall over recognition
+
+This is a **study tool**, not a content platform.
+
+---
+
+## Intended Use
+
+- Daily memorization and revision
+- Long-term retention of core texts
+- Serious students of Islamic knowledge
+
+---
+
+## Status
+
+This project is an MVP focused on correctness, clarity, and retention accuracy.  
+Future additions will only be considered if they do not compromise recall quality.
