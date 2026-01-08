@@ -10,9 +10,21 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { Loader2, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { cn } from '@/lib/utils';
 
 type ItemType = 'hadith' | 'quran' | 'scholar';
 type DifficultyLevel = 'easy' | 'medium' | 'hard';
+
+const AVAILABLE_CATEGORIES = [
+  'Aqeedah',
+  'Fiqh',
+  'Mustalah Al-Hadith',
+  'Tafsir',
+  'Manners',
+  'Heart-Softener',
+  'Hadith',
+  'Usool Al-Fiqh',
+] as const;
 
 export function AddItemForm() {
   const [itemType, setItemType] = useState<ItemType>('hadith');
@@ -23,7 +35,7 @@ export function AddItemForm() {
   const [arabicText, setArabicText] = useState('');
   const [translation, setTranslation] = useState('');
   const [source, setSource] = useState('');
-  const [category, setCategory] = useState('');
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   
   // Hadith-specific
   const [narrator, setNarrator] = useState('');
@@ -39,11 +51,19 @@ export function AddItemForm() {
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  const toggleCategory = (category: string) => {
+    setSelectedCategories((prev) =>
+      prev.includes(category)
+        ? prev.filter((c) => c !== category)
+        : [...prev, category]
+    );
+  };
+
   const resetForm = () => {
     setArabicText('');
     setTranslation('');
     setSource('');
-    setCategory('');
+    setSelectedCategories([]);
     setNarrator('');
     setSpeakerName('');
     setSurahName('');
@@ -77,7 +97,7 @@ export function AddItemForm() {
         translation: translation.trim() || null,
         item_type: itemType,
         source: source.trim() || null,
-        category: category.trim() || null,
+        category: selectedCategories.length > 0 ? selectedCategories : null,
         difficulty,
         narrator: itemType === 'hadith' ? narrator.trim() : null,
         speaker_name: itemType === 'scholar' ? speakerName.trim() : null,
@@ -243,17 +263,28 @@ export function AddItemForm() {
               />
             </div>
 
-            {/* Category - for filtering only */}
-            <div className="space-y-2">
-              <Label htmlFor="category">Category (for filtering only)</Label>
-              <Input
-                id="category"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                placeholder="e.g., Prayer, Patience, Aqeedah"
-              />
+            {/* Category Selector */}
+            <div className="space-y-3">
+              <Label>Categories (optional hint during review)</Label>
+              <div className="flex flex-wrap gap-2">
+                {AVAILABLE_CATEGORIES.map((category) => (
+                  <Button
+                    key={category}
+                    type="button"
+                    variant={selectedCategories.includes(category) ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => toggleCategory(category)}
+                    className={cn(
+                      'transition-all',
+                      selectedCategories.includes(category) && 'ring-2 ring-ring ring-offset-2'
+                    )}
+                  >
+                    {category}
+                  </Button>
+                ))}
+              </div>
               <p className="text-xs text-muted-foreground">
-                Categories are used for organizing your library. They will not be shown during review.
+                Select one or more categories. These will be visible during review as hints.
               </p>
             </div>
 

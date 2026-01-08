@@ -18,7 +18,7 @@ export type Database = {
         Row: {
           arabic_text: string
           ayah_reference: string | null
-          category: string | null
+          category: string[] | null
           created_at: string
           difficulty: Database["public"]["Enums"]["difficulty_level"]
           easiness_factor: number
@@ -38,7 +38,7 @@ export type Database = {
         Insert: {
           arabic_text: string
           ayah_reference?: string | null
-          category?: string | null
+          category?: string[] | null
           created_at?: string
           difficulty?: Database["public"]["Enums"]["difficulty_level"]
           easiness_factor?: number
@@ -58,7 +58,7 @@ export type Database = {
         Update: {
           arabic_text?: string
           ayah_reference?: string | null
-          category?: string | null
+          category?: string[] | null
           created_at?: string
           difficulty?: Database["public"]["Enums"]["difficulty_level"]
           easiness_factor?: number

@@ -13,7 +13,7 @@ interface ReviewCardProps {
     translation: string | null;
     item_type: 'hadith' | 'quran' | 'scholar';
     source: string | null;
-    category: string | null;
+    category: string[] | null;
     narrator: string | null;
     speaker_name: string | null;
     surah_name: string | null;
@@ -73,16 +73,28 @@ export function ReviewCard({ item, onRate, isLoading }: ReviewCardProps) {
     <div className="max-w-2xl mx-auto space-y-6">
       <Card className="overflow-hidden">
         <CardContent className="p-6 space-y-6">
-          {/* Header - Type badge and context info */}
-          <div className="flex items-center justify-between flex-wrap gap-2">
-            <Badge variant="outline" className="gap-1">
-              <TypeIcon className="w-3 h-3" />
-              {typeLabels[item.item_type]}
-            </Badge>
-            {contextInfo && (
-              <span className="text-sm font-medium text-foreground">
-                {contextInfo}
-              </span>
+          {/* Header - Type badge, context info, and categories */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <Badge variant="outline" className="gap-1">
+                <TypeIcon className="w-3 h-3" />
+                {typeLabels[item.item_type]}
+              </Badge>
+              {contextInfo && (
+                <span className="text-sm font-medium text-foreground">
+                  {contextInfo}
+                </span>
+              )}
+            </div>
+            {/* Categories - Always visible as hints */}
+            {item.category && item.category.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {item.category.map((cat) => (
+                  <Badge key={cat} variant="secondary" className="text-xs">
+                    {cat}
+                  </Badge>
+                ))}
+              </div>
             )}
           </div>
 

@@ -26,7 +26,7 @@ interface MemorizationItem {
   translation: string | null;
   item_type: 'hadith' | 'quran' | 'scholar';
   source: string | null;
-  category: string | null;
+  category: string[] | null;
   difficulty: 'easy' | 'medium' | 'hard';
   repetitions: number;
   easiness_factor: number;
@@ -96,11 +96,14 @@ export function LibraryPage() {
   };
 
   const filteredItems = items.filter(item => {
+    const categoryMatch = item.category?.some(cat => 
+      cat.toLowerCase().includes(search.toLowerCase())
+    );
     const matchesSearch = search === '' ||
       item.arabic_text.includes(search) ||
       item.translation?.toLowerCase().includes(search.toLowerCase()) ||
       item.source?.toLowerCase().includes(search.toLowerCase()) ||
-      item.category?.toLowerCase().includes(search.toLowerCase());
+      categoryMatch;
 
     const matchesType = typeFilter === 'all' || item.item_type === typeFilter;
 
