@@ -5,7 +5,7 @@ export type RecallRating = 0 | 1 | 2 | 3; // 0=Again, 1=Hard, 2=Good, 3=Easy
 export interface SpacedRepetitionData {
   repetitions: number;
   easinessFactor: number;
-  interval: number;
+  interval: number; // In days (can be fractional for sub-day intervals)
 }
 
 export interface SpacedRepetitionResult extends SpacedRepetitionData {
@@ -16,11 +16,28 @@ export interface SpacedRepetitionResult extends SpacedRepetitionData {
 // Minimum ease factor (Anki default is 1.3)
 const MIN_EASE_FACTOR = 1.3;
 
-// Learning phase intervals in minutes (converted to days for storage)
-const LEARNING_STEPS = [1, 10]; // 1 min, 10 min (simplified for daily review)
+// Learning steps in minutes - cards must pass through these before graduating
+const LEARNING_STEPS_MINUTES = [1, 10]; // 1 min, 10 min
+
+// Convert minutes to fractional days
+const minutesToDays = (minutes: number): number => minutes / 1440;
+
+// Graduation interval (first review interval after learning phase)
+const GRADUATING_INTERVAL = 1; // 1 day
+
+// Easy bonus for graduating immediately
+const EASY_GRADUATING_INTERVAL = 4; // 4 days
 
 /**
- * Anki-style SM-2 algorithm
+ * Determine if a card is in learning phase
+ * Cards are in learning phase if repetitions < learning steps count
+ */
+function isLearningPhase(repetitions: number): boolean {
+  return repetitions < LEARNING_STEPS_MINUTES.length;
+}
+
+/**
+ * Anki-style SM-2 algorithm with proper learning steps and mature card intervals
  * @param rating - 0: Again, 1: Hard, 2: Good, 3: Easy
  * @param currentData - Current spaced repetition data
  * @returns Updated spaced repetition data with next review date
@@ -37,60 +54,78 @@ export function calculateNextReview(
   const nextReviewDate = new Date();
   let requeueInSession = false;
 
+  const inLearningPhase = isLearningPhase(repetitions);
+
   switch (rating) {
     case 0: // Again - Failed recall, must retry in same session
       repetitions = 0;
-      interval = 0; // Same day - will be requeued in session
-      requeueInSession = true; // Card must reappear in this session
+      interval = 0; // Will be requeued in session
+      requeueInSession = true;
       // Decrease ease factor by 0.2 (Anki behavior)
       easinessFactor = Math.max(MIN_EASE_FACTOR, easinessFactor - 0.2);
       break;
 
-    case 1: // Hard - Increase interval slightly, decrease ease
-      if (repetitions === 0) {
-        // Still in learning phase
-        interval = 1;
+    case 1: // Hard
+      if (inLearningPhase) {
+        // In learning: repeat current step (slightly longer)
+        const currentStep = LEARNING_STEPS_MINUTES[repetitions] || LEARNING_STEPS_MINUTES[0];
+        interval = minutesToDays(currentStep * 1.5); // 1.5x current step
+        // Don't advance repetitions for hard in learning
       } else {
-        // Multiply by 1.2 (Anki hard multiplier)
-        interval = Math.max(1, Math.round(interval * 1.2));
+        // Review phase: multiply by hard multiplier (1.2)
+        interval = Math.max(1, interval * 1.2);
+        repetitions += 1;
       }
-      // Decrease ease factor by 0.15 (Anki behavior)
+      // Decrease ease factor by 0.15
       easinessFactor = Math.max(MIN_EASE_FACTOR, easinessFactor - 0.15);
-      repetitions += 1;
       break;
 
-    case 2: // Good - Standard SM-2 progression
-      if (repetitions === 0) {
-        interval = 1; // First successful review: 1 day
-      } else if (repetitions === 1) {
-        interval = 6; // Second successful review: 6 days
+    case 2: // Good - Standard progression
+      if (inLearningPhase) {
+        // Advance to next learning step
+        const nextStep = repetitions + 1;
+        if (nextStep >= LEARNING_STEPS_MINUTES.length) {
+          // Graduate to review phase
+          interval = GRADUATING_INTERVAL;
+        } else {
+          // Next learning step
+          interval = minutesToDays(LEARNING_STEPS_MINUTES[nextStep]);
+        }
+        repetitions += 1;
       } else {
-        // Apply ease factor
+        // Review phase: apply ease factor
         interval = Math.round(interval * easinessFactor);
+        repetitions += 1;
       }
-      repetitions += 1;
       break;
 
     case 3: // Easy - Aggressive interval increase
-      if (repetitions === 0) {
-        interval = 4; // Skip ahead to 4 days
-      } else if (repetitions === 1) {
-        interval = 10; // Jump to 10 days
+      if (inLearningPhase) {
+        // Graduate immediately with bonus
+        interval = EASY_GRADUATING_INTERVAL;
+        repetitions = LEARNING_STEPS_MINUTES.length; // Mark as graduated
       } else {
-        // Apply ease factor with easy bonus (1.3x multiplier like Anki)
+        // Review phase: apply ease factor with easy bonus (1.3x)
         interval = Math.round(interval * easinessFactor * 1.3);
+        repetitions += 1;
       }
-      // Increase ease factor by 0.15 (Anki behavior)
+      // Increase ease factor by 0.15
       easinessFactor = easinessFactor + 0.15;
-      repetitions += 1;
       break;
   }
 
-  // Set next review date (for Again, keep it today so it stays in queue)
+  // Set next review date based on interval
   if (interval > 0) {
-    nextReviewDate.setDate(nextReviewDate.getDate() + interval);
+    if (interval < 1) {
+      // Sub-day interval: add minutes
+      const minutes = Math.round(interval * 1440);
+      nextReviewDate.setMinutes(nextReviewDate.getMinutes() + minutes);
+    } else {
+      // Full day interval
+      nextReviewDate.setDate(nextReviewDate.getDate() + Math.round(interval));
+    }
   }
-  // If interval is 0, nextReviewDate stays as today
+  // If interval is 0, nextReviewDate stays as now (requeued in session)
 
   return {
     repetitions,
@@ -142,12 +177,23 @@ export function getEstimatedIntervals(currentData: SpacedRepetitionData): Record
 }
 
 /**
- * Format interval for display
+ * Format interval for display - supports sub-day intervals
  */
 function formatInterval(days: number, isAgain: boolean = false): string {
   if (isAgain || days === 0) return 'Repeat';
-  if (days === 1) return '1d';
-  if (days < 30) return `${days}d`;
-  if (days < 365) return `${Math.round(days / 30)}mo`;
-  return `${(days / 365).toFixed(1)}y`;
+  
+  // Sub-day intervals (less than 1 day)
+  if (days < 1) {
+    const minutes = Math.round(days * 1440);
+    if (minutes < 60) return `${minutes}m`;
+    const hours = Math.round(minutes / 60);
+    return `${hours}h`;
+  }
+  
+  // Full day intervals
+  const roundedDays = Math.round(days);
+  if (roundedDays === 1) return '1d';
+  if (roundedDays < 30) return `${roundedDays}d`;
+  if (roundedDays < 365) return `${Math.round(roundedDays / 30)}mo`;
+  return `${(roundedDays / 365).toFixed(1)}y`;
 }
