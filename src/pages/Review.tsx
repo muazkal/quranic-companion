@@ -35,6 +35,7 @@ export function Review() {
   const [items, setItems] = useState<MemorizationItem[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [completedCount, setCompletedCount] = useState(0);
+  const [cardKey, setCardKey] = useState(0); // Force re-render when same card reappears
 
   useEffect(() => {
     if (user) {
@@ -77,7 +78,7 @@ export function Review() {
         interval: currentItem.interval,
       });
 
-      // Update the item immediately
+      // Update the item in database
       const { error: updateError } = await supabase
         .from('memorization_items')
         .update({
@@ -101,46 +102,72 @@ export function Review() {
 
       if (historyError) throw historyError;
 
-      // Update streak
-      const today = new Date().toISOString().split('T')[0];
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('current_streak, longest_streak, last_review_date')
-        .eq('user_id', user.id)
-        .maybeSingle();
+      // Update streak only on first successful review of the day
+      if (!result.requeueInSession) {
+        const today = new Date().toISOString().split('T')[0];
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('current_streak, longest_streak, last_review_date')
+          .eq('user_id', user.id)
+          .maybeSingle();
 
-      if (profile) {
-        const lastReview = profile.last_review_date;
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-        const yesterdayStr = yesterday.toISOString().split('T')[0];
+        if (profile) {
+          const lastReview = profile.last_review_date;
+          const yesterday = new Date();
+          yesterday.setDate(yesterday.getDate() - 1);
+          const yesterdayStr = yesterday.toISOString().split('T')[0];
 
-        let newStreak = profile.current_streak;
-        if (lastReview !== today) {
-          if (lastReview === yesterdayStr) {
-            newStreak += 1;
-          } else if (!lastReview) {
-            newStreak = 1;
-          } else {
-            newStreak = 1; // Reset streak if missed a day
+          let newStreak = profile.current_streak;
+          if (lastReview !== today) {
+            if (lastReview === yesterdayStr) {
+              newStreak += 1;
+            } else if (!lastReview) {
+              newStreak = 1;
+            } else {
+              newStreak = 1; // Reset streak if missed a day
+            }
+
+            await supabase
+              .from('profiles')
+              .update({
+                current_streak: newStreak,
+                longest_streak: Math.max(newStreak, profile.longest_streak),
+                last_review_date: today,
+              })
+              .eq('user_id', user.id);
           }
-
-          await supabase
-            .from('profiles')
-            .update({
-              current_streak: newStreak,
-              longest_streak: Math.max(newStreak, profile.longest_streak),
-              last_review_date: today,
-            })
-            .eq('user_id', user.id);
         }
       }
 
-      setCompletedCount(prev => prev + 1);
-      
-      // Move to next item
-      if (currentIndex < items.length - 1) {
-        setCurrentIndex(prev => prev + 1);
+      // Handle card progression
+      if (result.requeueInSession) {
+        // "Again" pressed - requeue card to end of session
+        // Update the item's local data with reset values
+        const updatedItem = {
+          ...currentItem,
+          repetitions: result.repetitions,
+          easiness_factor: result.easinessFactor,
+          interval: result.interval,
+        };
+        
+        // Remove from current position and add to end
+        setItems(prevItems => {
+          const newItems = [...prevItems];
+          newItems.splice(currentIndex, 1); // Remove current
+          newItems.push(updatedItem); // Add to end
+          return newItems;
+        });
+        // Force re-render for next card (in case it's the same card appearing again later)
+        setCardKey(prev => prev + 1);
+        // Keep currentIndex the same (next card slides into this position)
+        // Don't increment completedCount for failed cards
+      } else {
+        // Successful review - move to next card
+        setCompletedCount(prev => prev + 1);
+        
+        if (currentIndex < items.length - 1) {
+          setCurrentIndex(prev => prev + 1);
+        }
       }
     } catch (error: any) {
       toast({
@@ -162,8 +189,9 @@ export function Review() {
     );
   }
 
-  // All done!
-  if (items.length === 0 || completedCount >= items.length) {
+  // All done! Only complete when all remaining items have been successfully reviewed
+  const remainingItems = items.length - currentIndex;
+  if (items.length === 0 || (completedCount > 0 && remainingItems === 0) || currentIndex >= items.length) {
     return (
       <div className="max-w-2xl mx-auto">
         <Card>
@@ -177,7 +205,7 @@ export function Review() {
             <p className="text-muted-foreground mb-6">
               {items.length === 0
                 ? 'Add some items to your library to start reviewing.'
-                : `You reviewed ${completedCount} item${completedCount !== 1 ? 's' : ''}. Great work!`}
+                : `You successfully reviewed ${completedCount} item${completedCount !== 1 ? 's' : ''}. Great work!`}
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Link to="/">
@@ -200,7 +228,9 @@ export function Review() {
   }
 
   const currentItem = items[currentIndex];
-  const progress = (completedCount / items.length) * 100;
+  // Progress based on completed vs total remaining (items can grow when requeued)
+  const totalToReview = completedCount + (items.length - currentIndex);
+  const progress = totalToReview > 0 ? (completedCount / totalToReview) * 100 : 0;
 
   return (
     <div className="space-y-6">
@@ -214,7 +244,7 @@ export function Review() {
             </Button>
           </Link>
           <span className="text-muted-foreground">
-            {completedCount + 1} of {items.length}
+            {completedCount} done · {items.length - currentIndex} remaining
           </span>
         </div>
         <Progress value={progress} className="h-2" />
@@ -222,7 +252,7 @@ export function Review() {
 
       {/* Review Card */}
       <ReviewCard
-        key={currentItem.id}
+        key={`${currentItem.id}-${cardKey}`}
         item={currentItem}
         onRate={handleRate}
         isLoading={submitting}

@@ -10,6 +10,7 @@ export interface SpacedRepetitionData {
 
 export interface SpacedRepetitionResult extends SpacedRepetitionData {
   nextReviewDate: Date;
+  requeueInSession: boolean; // True if card should be shown again in same session
 }
 
 // Minimum ease factor (Anki default is 1.3)
@@ -34,11 +35,13 @@ export function calculateNextReview(
   easinessFactor = Math.max(MIN_EASE_FACTOR, easinessFactor);
 
   const nextReviewDate = new Date();
+  let requeueInSession = false;
 
   switch (rating) {
-    case 0: // Again - Reset to learning phase
+    case 0: // Again - Failed recall, must retry in same session
       repetitions = 0;
-      interval = 1; // Review tomorrow (simplified from minutes for web app)
+      interval = 0; // Same day - will be requeued in session
+      requeueInSession = true; // Card must reappear in this session
       // Decrease ease factor by 0.2 (Anki behavior)
       easinessFactor = Math.max(MIN_EASE_FACTOR, easinessFactor - 0.2);
       break;
@@ -83,14 +86,18 @@ export function calculateNextReview(
       break;
   }
 
-  // Set next review date
-  nextReviewDate.setDate(nextReviewDate.getDate() + interval);
+  // Set next review date (for Again, keep it today so it stays in queue)
+  if (interval > 0) {
+    nextReviewDate.setDate(nextReviewDate.getDate() + interval);
+  }
+  // If interval is 0, nextReviewDate stays as today
 
   return {
     repetitions,
     easinessFactor: Number(easinessFactor.toFixed(2)),
     interval,
     nextReviewDate,
+    requeueInSession,
   };
 }
 
@@ -127,7 +134,8 @@ export function getEstimatedIntervals(currentData: SpacedRepetitionData): Record
   
   for (let rating = 0; rating <= 3; rating++) {
     const result = calculateNextReview(rating as RecallRating, currentData);
-    results[rating as RecallRating] = formatInterval(result.interval);
+    // For "Again" (rating 0), show "Repeat" instead of interval
+    results[rating as RecallRating] = formatInterval(result.interval, rating === 0);
   }
   
   return results;
@@ -136,7 +144,8 @@ export function getEstimatedIntervals(currentData: SpacedRepetitionData): Record
 /**
  * Format interval for display
  */
-function formatInterval(days: number): string {
+function formatInterval(days: number, isAgain: boolean = false): string {
+  if (isAgain || days === 0) return 'Repeat';
   if (days === 1) return '1d';
   if (days < 30) return `${days}d`;
   if (days < 365) return `${Math.round(days / 30)}mo`;
