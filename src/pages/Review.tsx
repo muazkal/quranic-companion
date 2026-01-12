@@ -33,7 +33,6 @@ export function Review() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [items, setItems] = useState<MemorizationItem[]>([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
   const [completedCount, setCompletedCount] = useState(0);
   const [cardKey, setCardKey] = useState(0); // Force re-render when same card reappears
 
@@ -67,7 +66,7 @@ export function Review() {
   const handleRate = async (rating: RecallRating) => {
     if (!user || submitting) return;
 
-    const currentItem = items[currentIndex];
+    const currentItem = items[0]; // Always work with first item in queue
     setSubmitting(true);
 
     try {
@@ -153,7 +152,7 @@ export function Review() {
         // Remove from current position and add to end
         setItems(prevItems => {
           const newItems = [...prevItems];
-          newItems.splice(currentIndex, 1); // Remove current
+          newItems.splice(0, 1); // Remove first item
           newItems.push(updatedItem); // Add to end
           return newItems;
         });
@@ -162,12 +161,16 @@ export function Review() {
         // Keep currentIndex the same (next card slides into this position)
         // Don't increment completedCount for failed cards
       } else {
-        // Successful review - move to next card
+        // Successful review (Hard/Good/Easy) - REMOVE card from queue completely
+        setItems(prevItems => {
+          const newItems = [...prevItems];
+          newItems.splice(0, 1); // Remove the completed card from front
+          return newItems;
+        });
         setCompletedCount(prev => prev + 1);
-        
-        if (currentIndex < items.length - 1) {
-          setCurrentIndex(prev => prev + 1);
-        }
+        // Force re-render for the new card at this index
+        setCardKey(prev => prev + 1);
+        // currentIndex stays the same since array shifted
       }
     } catch (error: any) {
       toast({
@@ -189,9 +192,8 @@ export function Review() {
     );
   }
 
-  // All done! Only complete when all remaining items have been successfully reviewed
-  const remainingItems = items.length - currentIndex;
-  if (items.length === 0 || (completedCount > 0 && remainingItems === 0) || currentIndex >= items.length) {
+  // Session complete when queue is empty
+  if (items.length === 0) {
     return (
       <div className="max-w-2xl mx-auto">
         <Card>
@@ -200,10 +202,10 @@ export function Review() {
               <Trophy className="w-10 h-10 text-primary" />
             </div>
             <h1 className="text-2xl font-serif font-semibold mb-2">
-              {items.length === 0 ? 'No items to review' : 'Session Complete!'}
+              {completedCount === 0 ? 'No items to review' : 'Session Complete!'}
             </h1>
             <p className="text-muted-foreground mb-6">
-              {items.length === 0
+              {completedCount === 0
                 ? 'Add some items to your library to start reviewing.'
                 : `You successfully reviewed ${completedCount} item${completedCount !== 1 ? 's' : ''}. Great work!`}
             </p>
@@ -227,9 +229,9 @@ export function Review() {
     );
   }
 
-  const currentItem = items[currentIndex];
-  // Progress based on completed vs total remaining (items can grow when requeued)
-  const totalToReview = completedCount + (items.length - currentIndex);
+  const currentItem = items[0]; // Always show first item in queue
+  // Progress: completed vs total (completed + remaining in queue)
+  const totalToReview = completedCount + items.length;
   const progress = totalToReview > 0 ? (completedCount / totalToReview) * 100 : 0;
 
   return (
@@ -244,7 +246,7 @@ export function Review() {
             </Button>
           </Link>
           <span className="text-muted-foreground">
-            {completedCount} done · {items.length - currentIndex} remaining
+            {completedCount} done · {items.length} remaining
           </span>
         </div>
         <Progress value={progress} className="h-2" />
