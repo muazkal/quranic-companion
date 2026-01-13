@@ -78,12 +78,18 @@ export function Review() {
       });
 
       // Update the item in database
+      // CRITICAL: Database expects INTEGER for interval - convert fractional days to whole days
+      // For "Again" (rating 0), interval stays 0; otherwise minimum 1 day
+      const intervalForDb = rating === 0 
+        ? 0 
+        : Math.max(1, Math.round(Number.isFinite(result.interval) ? result.interval : 1));
+      
       const { error: updateError } = await supabase
         .from('memorization_items')
         .update({
           repetitions: result.repetitions,
           easiness_factor: result.easinessFactor,
-          interval: result.interval,
+          interval: intervalForDb,
           next_review_date: result.nextReviewDate.toISOString().split('T')[0],
         })
         .eq('id', currentItem.id);
