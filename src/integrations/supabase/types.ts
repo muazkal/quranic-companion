@@ -26,7 +26,9 @@ export type Database = {
           interval: number
           item_type: Database["public"]["Enums"]["item_type"]
           narrator: string | null
+          next_review_at: string
           next_review_date: string
+          phase: string
           repetitions: number
           source: string | null
           speaker_name: string | null
@@ -46,7 +48,9 @@ export type Database = {
           interval?: number
           item_type?: Database["public"]["Enums"]["item_type"]
           narrator?: string | null
+          next_review_at?: string
           next_review_date?: string
+          phase?: string
           repetitions?: number
           source?: string | null
           speaker_name?: string | null
@@ -66,7 +70,9 @@ export type Database = {
           interval?: number
           item_type?: Database["public"]["Enums"]["item_type"]
           narrator?: string | null
+          next_review_at?: string
           next_review_date?: string
+          phase?: string
           repetitions?: number
           source?: string | null
           speaker_name?: string | null

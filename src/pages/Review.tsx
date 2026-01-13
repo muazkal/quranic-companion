@@ -25,6 +25,7 @@ interface MemorizationItem {
   repetitions: number;
   easiness_factor: number;
   interval: number;
+  phase: 'learning' | 'review';
 }
 
 export function Review() {
@@ -46,13 +47,14 @@ export function Review() {
     if (!user) return;
 
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const now = new Date().toISOString();
+      // Fetch cards in review phase that are due, OR cards in learning phase due for session
       const { data, error } = await supabase
         .from('memorization_items')
         .select('*')
         .eq('user_id', user.id)
-        .lte('next_review_date', today)
-        .order('next_review_date', { ascending: true });
+        .lte('next_review_at', now)
+        .order('next_review_at', { ascending: true });
 
       if (error) throw error;
       setItems((data || []) as MemorizationItem[]);
@@ -77,11 +79,16 @@ export function Review() {
         interval: currentItem.interval,
       });
 
-      // Update the item in database
-      // CRITICAL: Database expects INTEGER for interval - convert fractional days to whole days
-      // For "Again" (rating 0), interval stays 0; otherwise minimum 1 day
-      const intervalForDb = rating === 0 
-        ? 0 
+      // Determine phase based on whether card has graduated
+      // Card graduates when repetitions >= learning steps (2) and rating is Hard/Good/Easy
+      const LEARNING_STEPS = 2;
+      const isInLearningPhase = result.repetitions < LEARNING_STEPS && rating !== 3;
+      const newPhase = isInLearningPhase ? 'learning' : 'review';
+      
+      // For learning phase, keep fractional interval for minute-based scheduling
+      // For review phase, round to whole days (minimum 1)
+      const intervalForDb = newPhase === 'learning' 
+        ? result.interval // Keep fractional for learning (e.g., 0.00694 = 10 min)
         : Math.max(1, Math.round(Number.isFinite(result.interval) ? result.interval : 1));
       
       const { error: updateError } = await supabase
@@ -90,6 +97,9 @@ export function Review() {
           repetitions: result.repetitions,
           easiness_factor: result.easinessFactor,
           interval: intervalForDb,
+          phase: newPhase,
+          next_review_at: result.nextReviewDate.toISOString(),
+          // Also update next_review_date for backward compatibility
           next_review_date: result.nextReviewDate.toISOString().split('T')[0],
         })
         .eq('id', currentItem.id);
@@ -146,37 +156,33 @@ export function Review() {
 
       // Handle card progression
       if (result.requeueInSession) {
-        // "Again" pressed - requeue card to end of session
-        // Update the item's local data with reset values
+        // "Again" pressed - requeue card to end of session (stays in learning)
         const updatedItem = {
           ...currentItem,
           repetitions: result.repetitions,
           easiness_factor: result.easinessFactor,
           interval: result.interval,
+          phase: 'learning' as const,
         };
         
-        // Remove from current position and add to end
         setItems(prevItems => {
           const newItems = [...prevItems];
-          newItems.splice(0, 1); // Remove first item
-          newItems.push(updatedItem); // Add to end
+          newItems.splice(0, 1);
+          newItems.push(updatedItem);
           return newItems;
         });
-        // Force re-render for next card (in case it's the same card appearing again later)
         setCardKey(prev => prev + 1);
-        // Keep currentIndex the same (next card slides into this position)
-        // Don't increment completedCount for failed cards
       } else {
-        // Successful review (Hard/Good/Easy) - REMOVE card from queue completely
+        // Successful review - remove card from queue
+        // Learning phase cards with minute intervals: remove but they'll reappear when due
+        // Review phase cards: remove, scheduled for future day
         setItems(prevItems => {
           const newItems = [...prevItems];
-          newItems.splice(0, 1); // Remove the completed card from front
+          newItems.splice(0, 1);
           return newItems;
         });
         setCompletedCount(prev => prev + 1);
-        // Force re-render for the new card at this index
         setCardKey(prev => prev + 1);
-        // currentIndex stays the same since array shifted
       }
     } catch (error: any) {
       toast({

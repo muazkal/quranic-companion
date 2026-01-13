@@ -21,6 +21,8 @@ interface MemorizationItem {
   repetitions: number;
   easiness_factor: number;
   next_review_date: string;
+  next_review_at: string;
+  phase: 'learning' | 'review';
   narrator: string | null;
   speaker_name: string | null;
   surah_name: string | null;
@@ -65,14 +67,17 @@ export function Dashboard() {
         .from('memorization_items')
         .select('*')
         .eq('user_id', user.id)
-        .order('next_review_date', { ascending: true });
+        .order('next_review_at', { ascending: true });
 
       const allItems = (itemsData || []) as MemorizationItem[];
       setItems(allItems);
 
-      // Filter due items
-      const today = new Date().toISOString().split('T')[0];
-      const due = allItems.filter(item => item.next_review_date <= today);
+      // Filter due items - ONLY review phase cards that are due
+      // Learning phase cards are handled within the review session, not on dashboard
+      const now = new Date().toISOString();
+      const due = allItems.filter(item => 
+        item.phase === 'review' && item.next_review_at <= now
+      );
       setDueItems(due);
 
       // Count today's reviews
