@@ -48,8 +48,16 @@ export function calculateNextReview(
 ): SpacedRepetitionResult {
   let { repetitions, easinessFactor, interval } = currentData;
 
-  // Ensure easiness factor is at least the minimum
-  easinessFactor = Math.max(MIN_EASE_FACTOR, easinessFactor);
+  // DEFENSIVE: Ensure all values are valid numbers with sensible defaults
+  if (!Number.isFinite(repetitions) || repetitions < 0) {
+    repetitions = 0;
+  }
+  if (!Number.isFinite(easinessFactor) || easinessFactor < MIN_EASE_FACTOR) {
+    easinessFactor = 2.5; // Default Anki ease factor
+  }
+  if (!Number.isFinite(interval) || interval < 0) {
+    interval = 0;
+  }
 
   const nextReviewDate = new Date();
   let requeueInSession = false;
@@ -73,7 +81,9 @@ export function calculateNextReview(
         // Don't advance repetitions for hard in learning
       } else {
         // Review phase: multiply by hard multiplier (1.2)
-        interval = Math.max(1, interval * 1.2);
+        // DEFENSIVE: Ensure previous interval is at least 1 day for mature cards
+        const safeInterval = Math.max(1, interval);
+        interval = Math.max(1, Math.round(safeInterval * 1.2));
         repetitions += 1;
       }
       // Decrease ease factor by 0.15
@@ -94,7 +104,10 @@ export function calculateNextReview(
         repetitions += 1;
       } else {
         // Review phase: apply ease factor
-        interval = Math.round(interval * easinessFactor);
+        // DEFENSIVE: Ensure previous interval is at least 1 day for mature cards
+        const safeInterval = Math.max(1, interval);
+        const safeEaseFactor = Math.max(MIN_EASE_FACTOR, easinessFactor);
+        interval = Math.max(1, Math.round(safeInterval * safeEaseFactor));
         repetitions += 1;
       }
       break;
@@ -106,7 +119,10 @@ export function calculateNextReview(
         repetitions = LEARNING_STEPS_MINUTES.length; // Mark as graduated
       } else {
         // Review phase: apply ease factor with easy bonus (1.3x)
-        interval = Math.round(interval * easinessFactor * 1.3);
+        // DEFENSIVE: Ensure previous interval is at least 1 day for mature cards
+        const safeInterval = Math.max(1, interval);
+        const safeEaseFactor = Math.max(MIN_EASE_FACTOR, easinessFactor);
+        interval = Math.max(1, Math.round(safeInterval * safeEaseFactor * 1.3));
         repetitions += 1;
       }
       // Increase ease factor by 0.15
@@ -114,15 +130,19 @@ export function calculateNextReview(
       break;
   }
 
+  // DEFENSIVE: Ensure interval is a valid number before date calculation
+  const safeIntervalForDate = Number.isFinite(interval) ? interval : 0;
+  
   // Set next review date based on interval
-  if (interval > 0) {
-    if (interval < 1) {
+  if (safeIntervalForDate > 0) {
+    if (safeIntervalForDate < 1) {
       // Sub-day interval: add minutes
-      const minutes = Math.round(interval * 1440);
+      const minutes = Math.max(1, Math.round(safeIntervalForDate * 1440));
       nextReviewDate.setMinutes(nextReviewDate.getMinutes() + minutes);
     } else {
       // Full day interval
-      nextReviewDate.setDate(nextReviewDate.getDate() + Math.round(interval));
+      const daysToAdd = Math.max(1, Math.round(safeIntervalForDate));
+      nextReviewDate.setDate(nextReviewDate.getDate() + daysToAdd);
     }
   }
   // If interval is 0, nextReviewDate stays as now (requeued in session)
