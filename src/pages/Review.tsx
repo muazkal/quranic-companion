@@ -81,15 +81,23 @@ export function Review() {
 
       // Determine phase based on whether card has graduated
       // Card graduates when repetitions >= learning steps (2) and rating is Hard/Good/Easy
+      // OR when Easy is pressed (immediate graduation)
       const LEARNING_STEPS = 2;
-      const isInLearningPhase = result.repetitions < LEARNING_STEPS && rating !== 3;
-      const newPhase = isInLearningPhase ? 'learning' : 'review';
+      const isGraduating = rating === 3 || result.repetitions >= LEARNING_STEPS;
+      const newPhase = isGraduating ? 'review' : 'learning';
       
-      // For learning phase, keep fractional interval for minute-based scheduling
-      // For review phase, round to whole days (minimum 1)
-      const intervalForDb = newPhase === 'learning' 
-        ? result.interval // Keep fractional for learning (e.g., 0.00694 = 10 min)
-        : Math.max(1, Math.round(Number.isFinite(result.interval) ? result.interval : 1));
+      // CRITICAL: Learning phase cards use only next_review_at for minute scheduling
+      // interval column is INTEGER - learning phase cards store 0
+      // Only review phase cards get actual day intervals (always integer >= 1)
+      let intervalForDb: number;
+      if (newPhase === 'learning') {
+        // Learning phase: interval_days = 0, scheduling via next_review_at only
+        intervalForDb = 0;
+      } else {
+        // Review phase: round to whole days, minimum 1
+        const safeInterval = Number.isFinite(result.interval) ? result.interval : 1;
+        intervalForDb = Math.max(1, Math.round(safeInterval));
+      }
       
       const { error: updateError } = await supabase
         .from('memorization_items')
