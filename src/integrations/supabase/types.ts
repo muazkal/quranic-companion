@@ -25,6 +25,7 @@ export type Database = {
           id: string
           interval: number
           item_type: Database["public"]["Enums"]["item_type"]
+          learning_step: number
           narrator: string | null
           next_review_at: string
           next_review_date: string
@@ -47,6 +48,7 @@ export type Database = {
           id?: string
           interval?: number
           item_type?: Database["public"]["Enums"]["item_type"]
+          learning_step?: number
           narrator?: string | null
           next_review_at?: string
           next_review_date?: string
@@ -69,6 +71,7 @@ export type Database = {
           id?: string
           interval?: number
           item_type?: Database["public"]["Enums"]["item_type"]
+          learning_step?: number
           narrator?: string | null
           next_review_at?: string
           next_review_date?: string
