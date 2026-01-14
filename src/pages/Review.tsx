@@ -6,7 +6,7 @@ import { ReviewCard } from '@/components/ReviewCard';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { calculateNextReview, RecallRating } from '@/lib/spaced-repetition';
+import { RecallRating } from '@/lib/spaced-repetition';
 import { ArrowLeft, Trophy, Plus } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -26,6 +26,7 @@ interface MemorizationItem {
   easiness_factor: number;
   interval: number;
   phase: 'learning' | 'review';
+  learning_step: number; // Tracks consecutive Good responses in learning phase
 }
 
 export function Review() {
@@ -68,47 +69,139 @@ export function Review() {
   const handleRate = async (rating: RecallRating) => {
     if (!user || submitting) return;
 
-    const currentItem = items[0]; // Always work with first item in queue
+    const currentItem = items[0];
     setSubmitting(true);
 
     try {
-      // Calculate next review using Anki-style SM-2
-      const result = calculateNextReview(rating, {
-        repetitions: currentItem.repetitions,
-        easinessFactor: Number(currentItem.easiness_factor),
-        interval: currentItem.interval,
-      });
+      const isCurrentlyLearning = currentItem.phase === 'learning';
+      const currentLearningStep = currentItem.learning_step || 0;
 
-      // Determine phase based on whether card has graduated
-      // Card graduates when repetitions >= learning steps (2) and rating is Hard/Good/Easy
-      // OR when Easy is pressed (immediate graduation)
-      const LEARNING_STEPS = 2;
-      const isGraduating = rating === 3 || result.repetitions >= LEARNING_STEPS;
-      const newPhase = isGraduating ? 'review' : 'learning';
-      
-      // CRITICAL: Learning phase cards use only next_review_at for minute scheduling
-      // interval column is INTEGER - learning phase cards store 0
-      // Only review phase cards get actual day intervals (always integer >= 1)
+      // ========================================
+      // GRADUATION LOGIC (EXACT SPEC)
+      // ========================================
+      // Condition A: Easy in learning phase → graduate immediately
+      // Condition B: Two consecutive Good responses (learning_step >= 1 AND rating === 2)
+      // 
+      // NON-GRADUATION:
+      // - Again or Hard → reset learning_step to 0
+      // - Single Good → increment learning_step to 1
+      // - Already in review phase → stay in review
+      // ========================================
+
+      let newPhase: 'learning' | 'review' = currentItem.phase;
+      let newLearningStep = currentLearningStep;
       let intervalForDb: number;
-      if (newPhase === 'learning') {
-        // Learning phase: interval_days = 0, scheduling via next_review_at only
-        intervalForDb = 0;
+      let nextReviewAt: Date;
+      let newRepetitions = currentItem.repetitions;
+      let newEasinessFactor = Number(currentItem.easiness_factor);
+      let requeueInSession = false;
+
+      if (isCurrentlyLearning) {
+        // === LEARNING PHASE LOGIC ===
+        switch (rating) {
+          case 0: // Again - reset, requeue in session
+            newLearningStep = 0;
+            nextReviewAt = new Date();
+            nextReviewAt.setMinutes(nextReviewAt.getMinutes() + 1);
+            requeueInSession = true;
+            newEasinessFactor = Math.max(1.3, newEasinessFactor - 0.2);
+            intervalForDb = 0;
+            break;
+
+          case 1: // Hard - reset consecutive count, 2 min delay
+            newLearningStep = 0;
+            nextReviewAt = new Date();
+            nextReviewAt.setMinutes(nextReviewAt.getMinutes() + 2);
+            newEasinessFactor = Math.max(1.3, newEasinessFactor - 0.15);
+            intervalForDb = 0;
+            break;
+
+          case 2: // Good - check for graduation condition B
+            if (currentLearningStep >= 1) {
+              // Two consecutive Goods → GRADUATE
+              newPhase = 'review';
+              newLearningStep = 0;
+              intervalForDb = 1;
+              nextReviewAt = new Date();
+              nextReviewAt.setDate(nextReviewAt.getDate() + 1);
+              newRepetitions = 2; // Mark as graduated
+            } else {
+              // First Good → increment step, 10 min delay
+              newLearningStep = 1;
+              nextReviewAt = new Date();
+              nextReviewAt.setMinutes(nextReviewAt.getMinutes() + 10);
+              intervalForDb = 0;
+            }
+            break;
+
+          case 3: // Easy - GRADUATE immediately (Condition A)
+            newPhase = 'review';
+            newLearningStep = 0;
+            intervalForDb = 4; // Easy bonus: 4 days
+            nextReviewAt = new Date();
+            nextReviewAt.setDate(nextReviewAt.getDate() + 4);
+            newRepetitions = 2;
+            newEasinessFactor = newEasinessFactor + 0.15;
+            break;
+
+          default:
+            throw new Error('Invalid rating');
+        }
       } else {
-        // Review phase: round to whole days, minimum 1
-        const safeInterval = Number.isFinite(result.interval) ? result.interval : 1;
-        intervalForDb = Math.max(1, Math.round(safeInterval));
+        // === REVIEW PHASE LOGIC (day-based only) ===
+        const currentInterval = Math.max(1, currentItem.interval);
+        
+        switch (rating) {
+          case 0: // Again - back to learning
+            newPhase = 'learning';
+            newLearningStep = 0;
+            intervalForDb = 0;
+            nextReviewAt = new Date();
+            nextReviewAt.setMinutes(nextReviewAt.getMinutes() + 1);
+            requeueInSession = true;
+            newRepetitions = 0;
+            newEasinessFactor = Math.max(1.3, newEasinessFactor - 0.2);
+            break;
+
+          case 1: // Hard - 1.2x interval
+            intervalForDb = Math.max(1, Math.round(currentInterval * 1.2));
+            nextReviewAt = new Date();
+            nextReviewAt.setDate(nextReviewAt.getDate() + intervalForDb);
+            newRepetitions += 1;
+            newEasinessFactor = Math.max(1.3, newEasinessFactor - 0.15);
+            break;
+
+          case 2: // Good - ease factor multiplier
+            intervalForDb = Math.max(1, Math.round(currentInterval * newEasinessFactor));
+            nextReviewAt = new Date();
+            nextReviewAt.setDate(nextReviewAt.getDate() + intervalForDb);
+            newRepetitions += 1;
+            break;
+
+          case 3: // Easy - ease factor * 1.3 bonus
+            intervalForDb = Math.max(1, Math.round(currentInterval * newEasinessFactor * 1.3));
+            nextReviewAt = new Date();
+            nextReviewAt.setDate(nextReviewAt.getDate() + intervalForDb);
+            newRepetitions += 1;
+            newEasinessFactor = newEasinessFactor + 0.15;
+            break;
+
+          default:
+            throw new Error('Invalid rating');
+        }
       }
-      
+
+      // Update database
       const { error: updateError } = await supabase
         .from('memorization_items')
         .update({
-          repetitions: result.repetitions,
-          easiness_factor: result.easinessFactor,
+          repetitions: newRepetitions,
+          easiness_factor: Number(newEasinessFactor.toFixed(2)),
           interval: intervalForDb,
           phase: newPhase,
-          next_review_at: result.nextReviewDate.toISOString(),
-          // Also update next_review_date for backward compatibility
-          next_review_date: result.nextReviewDate.toISOString().split('T')[0],
+          learning_step: newLearningStep,
+          next_review_at: nextReviewAt.toISOString(),
+          next_review_date: nextReviewAt.toISOString().split('T')[0],
         })
         .eq('id', currentItem.id);
 
@@ -125,8 +218,8 @@ export function Review() {
 
       if (historyError) throw historyError;
 
-      // Update streak only on first successful review of the day
-      if (!result.requeueInSession) {
+      // Update streak only when card leaves session (not requeued)
+      if (!requeueInSession) {
         const today = new Date().toISOString().split('T')[0];
         const { data: profile } = await supabase
           .from('profiles')
@@ -147,7 +240,7 @@ export function Review() {
             } else if (!lastReview) {
               newStreak = 1;
             } else {
-              newStreak = 1; // Reset streak if missed a day
+              newStreak = 1;
             }
 
             await supabase
@@ -162,15 +255,16 @@ export function Review() {
         }
       }
 
-      // Handle card progression
-      if (result.requeueInSession) {
-        // "Again" pressed - requeue card to end of session (stays in learning)
+      // Handle card progression in UI
+      if (requeueInSession) {
+        // Again pressed - requeue card to end of session
         const updatedItem = {
           ...currentItem,
-          repetitions: result.repetitions,
-          easiness_factor: result.easinessFactor,
-          interval: result.interval,
-          phase: 'learning' as const,
+          repetitions: newRepetitions,
+          easiness_factor: newEasinessFactor,
+          interval: intervalForDb,
+          phase: newPhase,
+          learning_step: newLearningStep,
         };
         
         setItems(prevItems => {
@@ -181,9 +275,7 @@ export function Review() {
         });
         setCardKey(prev => prev + 1);
       } else {
-        // Successful review - remove card from queue
-        // Learning phase cards with minute intervals: remove but they'll reappear when due
-        // Review phase cards: remove, scheduled for future day
+        // Card leaves current session
         setItems(prevItems => {
           const newItems = [...prevItems];
           newItems.splice(0, 1);

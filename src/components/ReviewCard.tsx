@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Eye, BookOpen, ScrollText, Quote } from 'lucide-react';
-import { RecallRating, getEstimatedIntervals, SpacedRepetitionData } from '@/lib/spaced-repetition';
+import { RecallRating } from '@/lib/spaced-repetition';
 import { cn } from '@/lib/utils';
 
 interface ReviewCardProps {
@@ -21,6 +21,8 @@ interface ReviewCardProps {
     repetitions: number;
     easiness_factor: number;
     interval: number;
+    phase: 'learning' | 'review';
+    learning_step: number;
   };
   onRate: (rating: RecallRating) => void;
   isLoading?: boolean;
@@ -61,13 +63,44 @@ export function ReviewCard({ item, onRate, isLoading }: ReviewCardProps) {
 
   const contextInfo = getContextInfo();
 
-  // Calculate estimated intervals for each rating
-  const currentData: SpacedRepetitionData = {
-    repetitions: item.repetitions,
-    easinessFactor: Number(item.easiness_factor),
-    interval: item.interval,
+  // Calculate estimated intervals based on current phase and learning_step
+  const getEstimatedIntervalsForPhase = () => {
+    const isLearning = item.phase === 'learning';
+    const learningStep = item.learning_step || 0;
+    const currentInterval = Math.max(1, item.interval);
+    const easeFactor = Number(item.easiness_factor);
+
+    if (isLearning) {
+      // Learning phase intervals
+      return {
+        0: 'Repeat', // Again - requeue
+        1: '2m',     // Hard - 2 minutes
+        2: learningStep >= 1 ? '1d' : '10m', // Good - graduate if 2nd consecutive, else 10m
+        3: '4d',     // Easy - immediate graduation with bonus
+      };
+    } else {
+      // Review phase intervals (day-based)
+      const hardInterval = Math.max(1, Math.round(currentInterval * 1.2));
+      const goodInterval = Math.max(1, Math.round(currentInterval * easeFactor));
+      const easyInterval = Math.max(1, Math.round(currentInterval * easeFactor * 1.3));
+      
+      return {
+        0: 'Repeat',
+        1: formatDays(hardInterval),
+        2: formatDays(goodInterval),
+        3: formatDays(easyInterval),
+      };
+    }
   };
-  const estimatedIntervals = getEstimatedIntervals(currentData);
+
+  const formatDays = (days: number): string => {
+    if (days === 1) return '1d';
+    if (days < 30) return `${days}d`;
+    if (days < 365) return `${Math.round(days / 30)}mo`;
+    return `${(days / 365).toFixed(1)}y`;
+  };
+
+  const estimatedIntervals = getEstimatedIntervalsForPhase();
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
