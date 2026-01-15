@@ -9,7 +9,7 @@ import { useAuthContext } from '@/contexts/AuthContext';
 import { Flame, BookOpen, Target, TrendingUp, Play, Plus, Library } from 'lucide-react';
 import { getItemStatus } from '@/lib/spaced-repetition';
 import { Skeleton } from '@/components/ui/skeleton';
-import { filterDueCards } from '@/lib/due-cards';
+import { fetchDueCards } from '@/lib/due-cards';
 
 interface MemorizationItem {
   id: string;
@@ -54,38 +54,38 @@ export function Dashboard() {
     if (!user) return;
 
     try {
-      // Fetch profile
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle();
-      
-      setProfile(profileData);
+      // Run all queries in parallel for better performance
+      const [profileResult, itemsResult, dueResult, reviewCountResult] = await Promise.all([
+        // Fetch profile
+        supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', user.id)
+          .maybeSingle(),
+        
+        // Fetch all items for stats
+        supabase
+          .from('memorization_items')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('next_review_at', { ascending: true }),
+        
+        // SINGLE SOURCE OF TRUTH: Use shared fetchDueCards for due items
+        // This is the EXACT same query used by the Review page
+        fetchDueCards({ userId: user.id, includeLearningSessions: false }),
+        
+        // Count today's reviews
+        supabase
+          .from('review_history')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .gte('reviewed_at', new Date().toISOString().split('T')[0])
+      ]);
 
-      // Fetch all items
-      const { data: itemsData } = await supabase
-        .from('memorization_items')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('next_review_at', { ascending: true });
-
-      const allItems = (itemsData || []) as MemorizationItem[];
-      setItems(allItems);
-
-      // Filter due items using shared utility (SINGLE SOURCE OF TRUTH)
-      // Only review-phase cards are "due" for dashboard display
-      const due = filterDueCards(allItems, false);
-      setDueItems(due);
-
-      // Count today's reviews
-      const { count } = await supabase
-        .from('review_history')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .gte('reviewed_at', new Date().toISOString().split('T')[0]);
-      
-      setTodayReviewed(count || 0);
+      setProfile(profileResult.data);
+      setItems((itemsResult.data || []) as MemorizationItem[]);
+      setDueItems((dueResult.data || []) as MemorizationItem[]);
+      setTodayReviewed(reviewCountResult.count || 0);
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
