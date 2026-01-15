@@ -49,12 +49,9 @@ export function Review() {
     if (!user) return;
 
     try {
-      // Use shared utility - includeLearningSessions=true for review page
-      // This includes both review-phase cards AND learning-phase cards in active session
-      const { data, error } = await fetchDueCards({ 
-        userId: user.id, 
-        includeLearningSessions: true 
-      });
+      // SINGLE SOURCE OF TRUTH: Same query as Dashboard
+      // A card is due if: next_review_at <= now (no phase filtering)
+      const { data, error } = await fetchDueCards({ userId: user.id });
 
       if (error) throw error;
       setItems((data || []) as MemorizationItem[]);

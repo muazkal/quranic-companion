@@ -2,77 +2,53 @@
  * SINGLE SOURCE OF TRUTH for due card logic.
  * 
  * A card is due if and only if:
- * - phase = "review"
- * - AND next_review_at <= now (full timestamp comparison)
+ *   next_review_at <= now
  * 
- * Learning-phase cards are NEVER considered "due" for dashboard purposes.
- * They are handled within an active review session only.
+ * This applies EVERYWHERE - Dashboard, Review, all counts.
+ * There is NO distinction between learning/review phases for "due" status.
+ * 
+ * INVARIANT: Dashboard due count === Review session card count
  */
 
 import { supabase } from '@/integrations/supabase/client';
 
 export interface DueCardFilters {
   userId: string;
-  /** If true, also includes learning-phase cards (for active review sessions only) */
-  includeLearningSessions?: boolean;
 }
 
 /**
- * Fetches due cards from the database.
+ * Fetches ALL due cards from the database.
+ * A card is due if: next_review_at <= now
  * 
- * By default (includeLearningSessions = false):
- *   Only returns cards where phase = "review" AND next_review_at <= now
- * 
- * If includeLearningSessions = true:
- *   Returns ALL cards where next_review_at <= now (for active review sessions)
+ * This is the ONLY due card query. Used by Dashboard AND Review.
  */
-export async function fetchDueCards({ userId, includeLearningSessions = false }: DueCardFilters) {
+export async function fetchDueCards({ userId }: DueCardFilters) {
   const now = new Date().toISOString();
   
-  let query = supabase
+  return supabase
     .from('memorization_items')
     .select('*')
     .eq('user_id', userId)
     .lte('next_review_at', now)
     .order('next_review_at', { ascending: true });
-  
-  // For dashboard: only review-phase cards are "due"
-  // For review session: include learning-phase cards too
-  if (!includeLearningSessions) {
-    query = query.eq('phase', 'review');
-  }
-  
-  return query;
 }
 
 /**
  * Filters an array of items to only those that are due.
  * Use this when you already have items loaded.
  * 
- * By default (includeLearningSessions = false):
- *   Only returns cards where phase = "review" AND next_review_at <= now
+ * A card is due if: next_review_at <= now
  */
-export function filterDueCards<T extends { phase: string; next_review_at: string }>(
-  items: T[],
-  includeLearningSessions = false
+export function filterDueCards<T extends { next_review_at: string }>(
+  items: T[]
 ): T[] {
   const now = new Date().toISOString();
-  
-  return items.filter(item => {
-    const isDue = item.next_review_at <= now;
-    
-    if (includeLearningSessions) {
-      return isDue;
-    }
-    
-    // Dashboard: only review-phase cards
-    return item.phase === 'review' && isDue;
-  });
+  return items.filter(item => item.next_review_at <= now);
 }
 
 /**
- * Counts due cards for dashboard display.
- * Only counts review-phase cards.
+ * Counts due cards for display.
+ * A card is due if: next_review_at <= now
  */
 export async function countDueCards(userId: string): Promise<number> {
   const now = new Date().toISOString();
@@ -81,7 +57,6 @@ export async function countDueCards(userId: string): Promise<number> {
     .from('memorization_items')
     .select('*', { count: 'exact', head: true })
     .eq('user_id', userId)
-    .eq('phase', 'review')
     .lte('next_review_at', now);
   
   if (error) {
