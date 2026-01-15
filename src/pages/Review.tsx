@@ -3,13 +3,14 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ReviewCard } from '@/components/ReviewCard';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { RecallRating } from '@/lib/spaced-repetition';
 import { ArrowLeft, Trophy, Plus } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
+import { fetchDueCards } from '@/lib/due-cards';
+import { supabase } from '@/integrations/supabase/client';
 
 interface MemorizationItem {
   id: string;
@@ -48,14 +49,12 @@ export function Review() {
     if (!user) return;
 
     try {
-      const now = new Date().toISOString();
-      // Fetch cards in review phase that are due, OR cards in learning phase due for session
-      const { data, error } = await supabase
-        .from('memorization_items')
-        .select('*')
-        .eq('user_id', user.id)
-        .lte('next_review_at', now)
-        .order('next_review_at', { ascending: true });
+      // Use shared utility - includeLearningSessions=true for review page
+      // This includes both review-phase cards AND learning-phase cards in active session
+      const { data, error } = await fetchDueCards({ 
+        userId: user.id, 
+        includeLearningSessions: true 
+      });
 
       if (error) throw error;
       setItems((data || []) as MemorizationItem[]);
