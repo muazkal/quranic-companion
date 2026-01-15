@@ -19,23 +19,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import type { Tables } from '@/integrations/supabase/types';
 
-interface MemorizationItem {
-  id: string;
-  arabic_text: string;
-  translation: string | null;
-  item_type: 'hadith' | 'quran' | 'scholar';
-  source: string | null;
-  category: string[] | null;
-  difficulty: 'easy' | 'medium' | 'hard';
-  repetitions: number;
-  easiness_factor: number;
-  next_review_date: string;
-  narrator: string | null;
-  speaker_name: string | null;
-  surah_name: string | null;
-  ayah_reference: string | null;
-}
+type MemorizationItem = Tables<'memorization_items'>;
 
 export function LibraryPage() {
   const { user } = useAuthContext();

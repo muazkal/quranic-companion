@@ -2,27 +2,15 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { BookOpen, ScrollText, Quote, Trash2, Calendar } from 'lucide-react';
-import { format } from 'date-fns';
+import { formatDistanceToNow, differenceInMinutes } from 'date-fns';
 import { getItemStatus } from '@/lib/spaced-repetition';
 import { cn } from '@/lib/utils';
+import type { Tables } from '@/integrations/supabase/types';
+
+type MemorizationItem = Tables<'memorization_items'>;
 
 interface ItemCardProps {
-  item: {
-    id: string;
-    arabic_text: string;
-    translation: string | null;
-    item_type: 'hadith' | 'quran' | 'scholar';
-    source: string | null;
-    category: string[] | null;
-    difficulty: 'easy' | 'medium' | 'hard';
-    repetitions: number;
-    easiness_factor: number;
-    next_review_date: string;
-    narrator: string | null;
-    speaker_name: string | null;
-    surah_name: string | null;
-    ayah_reference: string | null;
-  };
+  item: MemorizationItem;
   onDelete?: (id: string) => void;
 }
 
@@ -55,8 +43,26 @@ const statusLabels = {
 export function ItemCard({ item, onDelete }: ItemCardProps) {
   const TypeIcon = typeIcons[item.item_type];
   const status = getItemStatus(item.repetitions, Number(item.easiness_factor));
-  const nextReview = new Date(item.next_review_date);
-  const isOverdue = nextReview <= new Date();
+  // Use next_review_at (timestamp) for accurate due check, not next_review_date (date only)
+  const nextReview = new Date(item.next_review_at);
+  const now = new Date();
+  const isOverdue = nextReview <= now;
+  
+  // Get human-readable due label
+  const getDueLabel = () => {
+    if (isOverdue) {
+      return 'Due now';
+    }
+    
+    const minutesUntilDue = differenceInMinutes(nextReview, now);
+    
+    if (minutesUntilDue < 60) {
+      return `Due in ${minutesUntilDue} min`;
+    }
+    
+    // For longer times, use formatDistanceToNow
+    return `Due ${formatDistanceToNow(nextReview, { addSuffix: true })}`;
+  };
 
   // Get context info based on type
   const getContextInfo = () => {
@@ -125,7 +131,7 @@ export function ItemCard({ item, onDelete }: ItemCardProps) {
           <div className="flex items-center gap-1">
             <Calendar className="w-3 h-3" />
             <span className={isOverdue ? 'text-primary font-medium' : ''}>
-              {isOverdue ? 'Due now' : `Due ${format(nextReview, 'MMM d')}`}
+              {getDueLabel()}
             </span>
           </div>
           {item.source && (
