@@ -72,7 +72,7 @@ export function Dashboard() {
         
         // SINGLE SOURCE OF TRUTH: Use shared fetchDueCards for due items
         // This is the EXACT same query used by the Review page
-        fetchDueCards({ userId: user.id, includeLearningSessions: false }),
+        fetchDueCards({ userId: user.id }),
         
         // Count today's reviews
         supabase
