@@ -10,25 +10,9 @@ import { Flame, BookOpen, Target, TrendingUp, Play, Plus, Library } from 'lucide
 import { getItemStatus } from '@/lib/spaced-repetition';
 import { Skeleton } from '@/components/ui/skeleton';
 import { fetchDueCards } from '@/lib/due-cards';
+import type { Tables } from '@/integrations/supabase/types';
 
-interface MemorizationItem {
-  id: string;
-  arabic_text: string;
-  translation: string | null;
-  item_type: 'hadith' | 'quran' | 'scholar';
-  source: string | null;
-  category: string[] | null;
-  difficulty: 'easy' | 'medium' | 'hard';
-  repetitions: number;
-  easiness_factor: number;
-  next_review_date: string;
-  next_review_at: string;
-  phase: 'learning' | 'review';
-  narrator: string | null;
-  speaker_name: string | null;
-  surah_name: string | null;
-  ayah_reference: string | null;
-}
+type MemorizationItem = Tables<'memorization_items'>;
 
 interface Profile {
   current_streak: number;
