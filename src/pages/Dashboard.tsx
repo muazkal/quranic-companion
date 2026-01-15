@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { StatsCard } from '@/components/StatsCard';
 import { ItemCard } from '@/components/ItemCard';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,6 +9,7 @@ import { useAuthContext } from '@/contexts/AuthContext';
 import { Flame, BookOpen, Target, TrendingUp, Play, Plus, Library } from 'lucide-react';
 import { getItemStatus } from '@/lib/spaced-repetition';
 import { Skeleton } from '@/components/ui/skeleton';
+import { filterDueCards } from '@/lib/due-cards';
 
 interface MemorizationItem {
   id: string;
@@ -72,12 +73,9 @@ export function Dashboard() {
       const allItems = (itemsData || []) as MemorizationItem[];
       setItems(allItems);
 
-      // Filter due items - ONLY review phase cards that are due
-      // Learning phase cards are handled within the review session, not on dashboard
-      const now = new Date().toISOString();
-      const due = allItems.filter(item => 
-        item.phase === 'review' && item.next_review_at <= now
-      );
+      // Filter due items using shared utility (SINGLE SOURCE OF TRUTH)
+      // Only review-phase cards are "due" for dashboard display
+      const due = filterDueCards(allItems, false);
       setDueItems(due);
 
       // Count today's reviews
