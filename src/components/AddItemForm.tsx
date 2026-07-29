@@ -8,11 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
-import { Loader2, Plus, Download } from 'lucide-react';
+import { Loader2, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { HadithImportDialog, type ImportedHadith } from '@/components/HadithImportDialog';
-import { QuranSearchDialog, type ImportedAyah } from '@/components/QuranSearchDialog';
 
 type ItemType = 'hadith' | 'quran' | 'scholar';
 type DifficultyLevel = 'easy' | 'medium' | 'hard';
@@ -32,10 +30,6 @@ export function AddItemForm() {
   const [itemType, setItemType] = useState<ItemType>('hadith');
   const [difficulty, setDifficulty] = useState<DifficultyLevel>('medium');
   const [loading, setLoading] = useState(false);
-  const [hadithImportOpen, setHadithImportOpen] = useState(false);
-  const [quranSearchOpen, setQuranSearchOpen] = useState(false);
-  
-
   
   // Common fields
   const [arabicText, setArabicText] = useState('');
@@ -63,25 +57,6 @@ export function AddItemForm() {
         ? prev.filter((c) => c !== category)
         : [...prev, category]
     );
-  };
-
-  const handleHadithImport = (h: ImportedHadith) => {
-    setItemType('hadith');
-    setArabicText(h.arabicText);
-    setTranslation(h.translation);
-    setNarrator(h.narrator);
-    setSource(h.source);
-    toast({ title: 'Hadith imported', description: 'Review the fields, then save it to your library.' });
-  };
-
-  const handleAyahImport = (a: ImportedAyah) => {
-    setItemType('quran');
-    setArabicText(a.arabicText);
-    setTranslation(a.translation);
-    setSurahName(a.surahName);
-    setAyahReference(a.ayahReference);
-    setSource(a.source);
-    toast({ title: 'Ayah imported', description: 'Review the fields, then save it to your library.' });
   };
 
   const resetForm = () => {
@@ -159,30 +134,7 @@ export function AddItemForm() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {/* Quick import */}
-          <div className="mb-6 flex flex-col sm:flex-row gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              className="flex-1 gap-2"
-              onClick={() => setHadithImportOpen(true)}
-            >
-              <Download className="w-4 h-4" />
-              Import hadith (Sunnah.com)
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              className="flex-1 gap-2"
-              onClick={() => setQuranSearchOpen(true)}
-            >
-              <Download className="w-4 h-4" />
-              Search Qur'an
-            </Button>
-          </div>
-
           <form onSubmit={handleSubmit} className="space-y-6">
-
             {/* Type Selection */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -343,18 +295,6 @@ export function AddItemForm() {
           </form>
         </CardContent>
       </Card>
-
-      <HadithImportDialog
-        open={hadithImportOpen}
-        onOpenChange={setHadithImportOpen}
-        onImport={handleHadithImport}
-      />
-      <QuranSearchDialog
-        open={quranSearchOpen}
-        onOpenChange={setQuranSearchOpen}
-        onImport={handleAyahImport}
-      />
-
     </div>
   );
 }
