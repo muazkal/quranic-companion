@@ -65,6 +65,25 @@ export function AddItemForm() {
     );
   };
 
+  const handleHadithImport = (h: ImportedHadith) => {
+    setItemType('hadith');
+    setArabicText(h.arabicText);
+    setTranslation(h.translation);
+    setNarrator(h.narrator);
+    setSource(h.source);
+    toast({ title: 'Hadith imported', description: 'Review the fields, then save it to your library.' });
+  };
+
+  const handleAyahImport = (a: ImportedAyah) => {
+    setItemType('quran');
+    setArabicText(a.arabicText);
+    setTranslation(a.translation);
+    setSurahName(a.surahName);
+    setAyahReference(a.ayahReference);
+    setSource(a.source);
+    toast({ title: 'Ayah imported', description: 'Review the fields, then save it to your library.' });
+  };
+
   const resetForm = () => {
     setArabicText('');
     setTranslation('');
