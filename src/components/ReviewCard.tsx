@@ -140,7 +140,7 @@ export function ReviewCard({ item, onRate, isLoading }: ReviewCardProps) {
               )}
             >
               <p
-                className="font-arabic text-3xl md:text-4xl leading-[2] text-center"
+                className="font-arabic text-[16px] md:text-[16px] leading-[2.6] tracking-normal text-center [word-spacing:0.2em]"
                 dir="rtl"
               >
                 {item.arabic_text}
