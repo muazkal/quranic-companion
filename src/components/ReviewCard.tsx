@@ -63,6 +63,13 @@ export function ReviewCard({ item, onRate, isLoading }: ReviewCardProps) {
 
   const contextInfo = getContextInfo();
 
+  // First few words of the matn as a recall hint
+  const openingWords = item.arabic_text
+    .trim()
+    .split(/\s+/)
+    .slice(0, 4)
+    .join(' ') + ' …';
+
   // Calculate estimated intervals based on current phase and learning_step
   const getEstimatedIntervalsForPhase = () => {
     const isLearning = item.phase === 'learning';
