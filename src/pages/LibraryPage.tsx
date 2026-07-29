@@ -204,6 +204,16 @@ export function LibraryPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Edit Dialog */}
+      <EditItemDialog
+        item={editItem}
+        open={!!editItem}
+        onOpenChange={(open) => !open && setEditItem(null)}
+        onSaved={(updated) =>
+          setItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)))
+        }
+      />
     </div>
   );
 }
