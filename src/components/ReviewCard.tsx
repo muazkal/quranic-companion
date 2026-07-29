@@ -148,9 +148,20 @@ export function ReviewCard({ item, onRate, isLoading }: ReviewCardProps) {
             </div>
           </div>
 
-          {/* Reveal Button */}
+          {/* Reveal Button + opening-words hint */}
           {!revealed && (
-            <div className="text-center">
+            <div className="text-center space-y-4">
+              <div className="rounded-lg border border-dashed bg-muted/40 px-4 py-3">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">
+                  Opening words
+                </p>
+                <p
+                  className="font-arabic text-[16px] leading-[2.4] [word-spacing:0.2em]"
+                  dir="rtl"
+                >
+                  {openingWords}
+                </p>
+              </div>
               <Button
                 variant="recall"
                 size="lg"
@@ -161,7 +172,7 @@ export function ReviewCard({ item, onRate, isLoading }: ReviewCardProps) {
                 Reveal Text
               </Button>
               <p className="mt-3 text-sm text-muted-foreground">
-                Try to recall the text first, then reveal to check
+                Try to recall the rest from the opening words, then reveal to check
               </p>
             </div>
           )}
