@@ -163,6 +163,7 @@ export function LibraryPage() {
               key={item.id}
               item={item}
               onDelete={(id) => setDeleteId(id)}
+              onEdit={(it) => setEditItem(it)}
             />
           ))}
         </div>
