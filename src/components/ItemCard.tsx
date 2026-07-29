@@ -1,7 +1,7 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { BookOpen, ScrollText, Quote, Trash2, Calendar } from 'lucide-react';
+import { BookOpen, ScrollText, Quote, Trash2, Calendar, Pencil } from 'lucide-react';
 import { formatDistanceToNow, differenceInMinutes } from 'date-fns';
 import { getItemStatus } from '@/lib/spaced-repetition';
 import { cn } from '@/lib/utils';
@@ -12,6 +12,7 @@ type MemorizationItem = Tables<'memorization_items'>;
 interface ItemCardProps {
   item: MemorizationItem;
   onDelete?: (id: string) => void;
+  onEdit?: (item: MemorizationItem) => void;
 }
 
 const typeIcons = {
