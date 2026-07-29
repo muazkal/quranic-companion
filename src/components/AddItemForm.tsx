@@ -32,6 +32,10 @@ export function AddItemForm() {
   const [itemType, setItemType] = useState<ItemType>('hadith');
   const [difficulty, setDifficulty] = useState<DifficultyLevel>('medium');
   const [loading, setLoading] = useState(false);
+  const [hadithImportOpen, setHadithImportOpen] = useState(false);
+  const [quranSearchOpen, setQuranSearchOpen] = useState(false);
+  
+
   
   // Common fields
   const [arabicText, setArabicText] = useState('');
