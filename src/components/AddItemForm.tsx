@@ -8,9 +8,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
-import { Loader2, Plus } from 'lucide-react';
+import { Loader2, Plus, Download } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { HadithImportDialog, type ImportedHadith } from '@/components/HadithImportDialog';
+import { QuranSearchDialog, type ImportedAyah } from '@/components/QuranSearchDialog';
 
 type ItemType = 'hadith' | 'quran' | 'scholar';
 type DifficultyLevel = 'easy' | 'medium' | 'hard';
