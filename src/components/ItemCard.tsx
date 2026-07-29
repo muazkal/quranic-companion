@@ -1,7 +1,7 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { BookOpen, ScrollText, Quote, Trash2, Calendar } from 'lucide-react';
+import { BookOpen, ScrollText, Quote, Trash2, Calendar, Pencil } from 'lucide-react';
 import { formatDistanceToNow, differenceInMinutes } from 'date-fns';
 import { getItemStatus } from '@/lib/spaced-repetition';
 import { cn } from '@/lib/utils';
@@ -12,6 +12,7 @@ type MemorizationItem = Tables<'memorization_items'>;
 interface ItemCardProps {
   item: MemorizationItem;
   onDelete?: (id: string) => void;
+  onEdit?: (item: MemorizationItem) => void;
 }
 
 const typeIcons = {
@@ -40,7 +41,7 @@ const statusLabels = {
   struggling: 'Struggling',
 };
 
-export function ItemCard({ item, onDelete }: ItemCardProps) {
+export function ItemCard({ item, onDelete, onEdit }: ItemCardProps) {
   const TypeIcon = typeIcons[item.item_type];
   const status = getItemStatus(item.repetitions, Number(item.easiness_factor));
   // Use next_review_at (timestamp) for accurate due check, not next_review_date (date only)
@@ -95,17 +96,32 @@ export function ItemCard({ item, onDelete }: ItemCardProps) {
               {statusLabels[status]}
             </Badge>
           </div>
-          {onDelete && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 text-muted-foreground hover:text-destructive"
-              onClick={() => onDelete(item.id)}
-            >
-              <Trash2 className="w-4 h-4" />
-            </Button>
-          )}
+          <div className="flex items-center gap-1">
+            {onEdit && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity h-8 w-8 text-muted-foreground hover:text-primary"
+                aria-label="Edit item"
+                onClick={() => onEdit(item)}
+              >
+                <Pencil className="w-4 h-4" />
+              </Button>
+            )}
+            {onDelete && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity h-8 w-8 text-muted-foreground hover:text-destructive"
+                aria-label="Delete item"
+                onClick={() => onDelete(item.id)}
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            )}
+          </div>
         </div>
+
 
         {/* Context info (narrator/surah/speaker) */}
         {contextInfo && (
@@ -115,7 +131,7 @@ export function ItemCard({ item, onDelete }: ItemCardProps) {
         )}
 
         <p
-          className="font-arabic text-xl leading-[1.8] line-clamp-2"
+          className="font-arabic text-base leading-[2.4] [word-spacing:0.2em] line-clamp-2"
           dir="rtl"
         >
           {item.arabic_text}
