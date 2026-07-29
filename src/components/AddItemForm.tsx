@@ -343,6 +343,18 @@ export function AddItemForm() {
           </form>
         </CardContent>
       </Card>
+
+      <HadithImportDialog
+        open={hadithImportOpen}
+        onOpenChange={setHadithImportOpen}
+        onImport={handleHadithImport}
+      />
+      <QuranSearchDialog
+        open={quranSearchOpen}
+        onOpenChange={setQuranSearchOpen}
+        onImport={handleAyahImport}
+      />
+
     </div>
   );
 }
