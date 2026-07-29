@@ -159,7 +159,30 @@ export function AddItemForm() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {/* Quick import */}
+          <div className="mb-6 flex flex-col sm:flex-row gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              className="flex-1 gap-2"
+              onClick={() => setHadithImportOpen(true)}
+            >
+              <Download className="w-4 h-4" />
+              Import hadith (Sunnah.com)
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="flex-1 gap-2"
+              onClick={() => setQuranSearchOpen(true)}
+            >
+              <Download className="w-4 h-4" />
+              Search Qur'an
+            </Button>
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-6">
+
             {/* Type Selection */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
