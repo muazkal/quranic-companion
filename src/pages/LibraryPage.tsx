@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ItemCard } from '@/components/ItemCard';
+import { EditItemDialog } from '@/components/EditItemDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -31,6 +32,7 @@ export function LibraryPage() {
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [editItem, setEditItem] = useState<MemorizationItem | null>(null);
 
   useEffect(() => {
     if (user) {
