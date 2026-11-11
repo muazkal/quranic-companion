@@ -42,6 +42,18 @@ const typeLabels = {
 
 export function ReviewCard({ item, onRate, isLoading }: ReviewCardProps) {
   const [revealed, setRevealed] = useState(false);
+  const [wordsShown, setWordsShown] = useState(0);
+  const MAX_WORD_REVEALS = 5;
+  const allWords = item.arabic_text.trim().split(/\s+/);
+  const hintWords = allWords.slice(0, 4);
+  const revealNextWord = () => {
+    const next = wordsShown + 1;
+    if (next > MAX_WORD_REVEALS || hintWords.length + next >= allWords.length) {
+      setRevealed(true);
+    } else {
+      setWordsShown(next);
+    }
+  };
 
   const TypeIcon = typeIcons[item.item_type];
 
@@ -64,11 +76,7 @@ export function ReviewCard({ item, onRate, isLoading }: ReviewCardProps) {
   const contextInfo = getContextInfo();
 
   // First few words of the matn as a recall hint
-  const openingWords = item.arabic_text
-    .trim()
-    .split(/\s+/)
-    .slice(0, 4)
-    .join(' ') + ' …';
+  const openingWords = allWords.slice(0, hintWords.length + wordsShown).join(' ') + ' …';
 
   // Calculate estimated intervals based on current phase and learning_step
   const getEstimatedIntervalsForPhase = () => {
@@ -169,15 +177,24 @@ export function ReviewCard({ item, onRate, isLoading }: ReviewCardProps) {
                   {openingWords}
                 </p>
               </div>
-              <Button
-                variant="recall"
-                size="lg"
-                onClick={() => setRevealed(true)}
-                className="gap-2"
-              >
-                <Eye className="w-5 h-5" />
-                Reveal Text
-              </Button>
+              <div className="flex flex-wrap justify-center gap-2">
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={revealNextWord}
+                >
+                  Next word ({MAX_WORD_REVEALS - wordsShown} left)
+                </Button>
+                <Button
+                  variant="recall"
+                  size="lg"
+                  onClick={() => setRevealed(true)}
+                  className="gap-2"
+                >
+                  <Eye className="w-5 h-5" />
+                  Reveal Text
+                </Button>
+              </div>
               <p className="mt-3 text-sm text-muted-foreground">
                 Try to recall the rest from the opening words, then reveal to check
               </p>
