@@ -161,3 +161,11 @@ All colors MUST be HSL.
     @apply bg-background text-foreground;
   }
 }
+:root { --placeholder: 0 0% 84%; }
+@layer base {
+  input::placeholder,
+  textarea::placeholder,
+  [data-placeholder] {
+    color: hsl(var(--placeholder)) !important;
+  }
+}
