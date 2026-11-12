@@ -1,3 +1,4 @@
+import { useLanguage } from '@/contexts/LanguageContext';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -21,6 +22,7 @@ interface Profile {
 }
 
 export function Dashboard() {
+  const { t } = useLanguage();
   const { user } = useAuthContext();
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -102,35 +104,35 @@ export function Dashboard() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-serif font-semibold">السلام عليكم ورحمة الله وبركاته</h1>
-          <p className="text-muted-foreground">Ready for your daily memorization?</p>
+          <p className="text-muted-foreground">{t('dashReady')}</p>
         </div>
         <div className="flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-full">
           <Flame className="w-5 h-5 text-primary" />
           <span className="font-semibold">{profile?.current_streak || 0}</span>
-          <span className="text-sm text-muted-foreground">day streak</span>
+          <span className="text-sm text-muted-foreground">{t('dayStreak')}</span>
         </div>
       </div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatsCard
-          title="Due Today"
+          title={t('dueToday')}
           value={dueItems.length}
           icon={Target}
-          description={`${todayReviewed} reviewed`}
+          description={t('reviewedCount', { n: todayReviewed })}
         />
         <StatsCard
-          title="Memorized"
+          title={t('memorized')}
           value={stats.memorized}
           icon={TrendingUp}
         />
         <StatsCard
-          title="Learning"
+          title={t('learning')}
           value={stats.learning + stats.new}
           icon={BookOpen}
         />
         <StatsCard
-          title="Total Items"
+          title={t('totalItems')}
           value={items.length}
           icon={Library}
         />
@@ -143,16 +145,16 @@ export function Dashboard() {
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="text-center sm:text-left">
                 <h2 className="text-xl font-semibold">
-                  {dueItems.length} item{dueItems.length !== 1 ? 's' : ''} due for review
+                  {t('itemsDue', { n: dueItems.length })}
                 </h2>
                 <p className="text-muted-foreground">
-                  Keep your streak going! Start your daily review now.
+                  {t('keepStreak')}
                 </p>
               </div>
               <Link to="/review">
                 <Button size="lg" className="gap-2">
                   <Play className="w-4 h-4" />
-                  Start Review
+                  {t('startReview')}
                 </Button>
               </Link>
             </div>
@@ -164,9 +166,9 @@ export function Dashboard() {
             <div className="w-16 h-16 mx-auto mb-4 bg-emerald-500/10 rounded-full flex items-center justify-center">
               <TrendingUp className="w-8 h-8 text-emerald-500" />
             </div>
-            <h2 className="text-xl font-semibold">All caught up!</h2>
+            <h2 className="text-xl font-semibold">{t('allCaught')}</h2>
             <p className="text-muted-foreground mt-1">
-              No items due for review today. Great job staying consistent!
+              {t('noneDue')}
             </p>
           </CardContent>
         </Card>
@@ -176,14 +178,14 @@ export function Dashboard() {
             <div className="w-16 h-16 mx-auto mb-4 bg-primary/10 rounded-full flex items-center justify-center">
               <Plus className="w-8 h-8 text-primary" />
             </div>
-            <h2 className="text-xl font-semibold">Start your journey</h2>
+            <h2 className="text-xl font-semibold">{t('startJourney')}</h2>
             <p className="text-muted-foreground mt-1 mb-4">
-              Add your first memorization item to begin
+              {t('addFirstToBegin')}
             </p>
             <Link to="/add">
               <Button className="gap-2">
                 <Plus className="w-4 h-4" />
-                Add First Item
+                {t('addFirst')}
               </Button>
             </Link>
           </CardContent>
@@ -194,9 +196,9 @@ export function Dashboard() {
       {items.length > 0 && (
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold">Recent Items</h2>
+            <h2 className="text-lg font-semibold">{t('recentItems')}</h2>
             <Link to="/library">
-              <Button variant="ghost" size="sm">View All</Button>
+              <Button variant="ghost" size="sm">{t('viewAll')}</Button>
             </Link>
           </div>
           <div className="grid gap-4 md:grid-cols-2">

@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import { ResetPassword } from "./pages/ResetPassword";
 import { HelmetProvider } from 'react-helmet-async';
+import { LanguageProvider } from '@/contexts/LanguageContext';
 import { PageMetadata } from '@/components/PageMetadata';
 
 const queryClient = new QueryClient();
@@ -16,6 +17,7 @@ const App = () => (
   <HelmetProvider>
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
+      <LanguageProvider>
       <AuthProvider>
         <Toaster />
         <Sonner />
@@ -27,6 +29,7 @@ const App = () => (
           </Routes>
         </BrowserRouter>
       </AuthProvider>
+      </LanguageProvider>
     </TooltipProvider>
   </QueryClientProvider>
   </HelmetProvider>

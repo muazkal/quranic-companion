@@ -1,3 +1,4 @@
+import { useLanguage } from '@/contexts/LanguageContext';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -31,6 +32,7 @@ interface MemorizationItem {
 }
 
 export function Review() {
+  const { t } = useLanguage();
   const { user } = useAuthContext();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
@@ -282,7 +284,7 @@ export function Review() {
       }
     } catch (error: any) {
       toast({
-        title: 'Error',
+        title: t('error'),
         description: error.message,
         variant: 'destructive',
       });
@@ -310,24 +312,24 @@ export function Review() {
               <Trophy className="w-10 h-10 text-primary" />
             </div>
             <h1 className="text-2xl font-serif font-semibold mb-2">
-              {completedCount === 0 ? 'No items to review' : 'Session Complete!'}
+              {completedCount === 0 ? t('noItemsReview') : t('sessionComplete')}
             </h1>
             <p className="text-muted-foreground mb-6">
               {completedCount === 0
-                ? 'Add some items to your library to start reviewing.'
-                : `You successfully reviewed ${completedCount} item${completedCount !== 1 ? 's' : ''}. Great work!`}
+                ? t('addToStart')
+                : t('reviewedN', { n: completedCount })}
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Link to="/">
                 <Button variant="outline" className="gap-2">
                   <ArrowLeft className="w-4 h-4" />
-                  Back to Dashboard
+                  {t('backDashboard')}
                 </Button>
               </Link>
               <Link to="/add">
                 <Button className="gap-2">
                   <Plus className="w-4 h-4" />
-                  Add More Items
+                  {t('addMore')}
                 </Button>
               </Link>
             </div>
@@ -350,11 +352,11 @@ export function Review() {
           <Link to="/">
             <Button variant="ghost" size="sm" className="gap-2 -ml-2">
               <ArrowLeft className="w-4 h-4" />
-              Exit
+              {t('exit')}
             </Button>
           </Link>
           <span className="text-muted-foreground">
-            {completedCount} done · {items.length} remaining
+            {t('doneRemaining', { d: completedCount, r: items.length })}
           </span>
         </div>
         <Progress value={progress} className="h-2" />

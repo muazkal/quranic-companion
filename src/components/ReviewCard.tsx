@@ -1,3 +1,4 @@
+import { useLanguage } from '@/contexts/LanguageContext';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -41,6 +42,7 @@ const typeLabels = {
 };
 
 export function ReviewCard({ item, onRate, isLoading }: ReviewCardProps) {
+  const { t } = useLanguage();
   const [revealed, setRevealed] = useState(false);
   const [wordsShown, setWordsShown] = useState(0);
   const MAX_WORD_REVEALS = 5;
@@ -61,13 +63,13 @@ export function ReviewCard({ item, onRate, isLoading }: ReviewCardProps) {
   const getContextInfo = () => {
     switch (item.item_type) {
       case 'hadith':
-        return item.narrator ? `Narrator: ${item.narrator}` : null;
+        return item.narrator ? `${t('narrator')}: ${item.narrator}` : null;
       case 'quran':
         return item.surah_name && item.ayah_reference 
           ? `${item.surah_name} : ${item.ayah_reference}` 
           : null;
       case 'scholar':
-        return item.speaker_name ? `Speaker: ${item.speaker_name}` : null;
+        return item.speaker_name ? `${t('speaker')}: ${item.speaker_name}` : null;
       default:
         return null;
     }
@@ -88,7 +90,7 @@ export function ReviewCard({ item, onRate, isLoading }: ReviewCardProps) {
     if (isLearning) {
       // Learning phase intervals
       return {
-        0: 'Repeat', // Again - requeue
+        0: t('repeat'),
         1: '2m',     // Hard - 2 minutes
         2: learningStep >= 1 ? '1d' : '10m', // Good - graduate if 2nd consecutive, else 10m
         3: '4d',     // Easy - immediate graduation with bonus
@@ -100,7 +102,7 @@ export function ReviewCard({ item, onRate, isLoading }: ReviewCardProps) {
       const easyInterval = Math.max(1, Math.round(currentInterval * easeFactor * 1.3));
       
       return {
-        0: 'Repeat',
+        0: t('repeat'),
         1: formatDays(hardInterval),
         2: formatDays(goodInterval),
         3: formatDays(easyInterval),
@@ -126,7 +128,7 @@ export function ReviewCard({ item, onRate, isLoading }: ReviewCardProps) {
             <div className="flex items-center justify-between flex-wrap gap-2">
               <Badge variant="outline" className="gap-1">
                 <TypeIcon className="w-3 h-3" />
-                {typeLabels[item.item_type]}
+                {t(item.item_type)}
               </Badge>
               {contextInfo && (
                 <span className="text-sm font-medium text-foreground">
@@ -168,7 +170,7 @@ export function ReviewCard({ item, onRate, isLoading }: ReviewCardProps) {
             <div className="text-center space-y-4">
               <div className="rounded-lg border border-dashed bg-muted/40 px-4 py-3">
                 <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">
-                  Opening words
+                  {t('openingWords')}
                 </p>
                 <p
                   className="font-arabic text-[16px] leading-[2.4] [word-spacing:0.2em]"
@@ -183,7 +185,7 @@ export function ReviewCard({ item, onRate, isLoading }: ReviewCardProps) {
                   size="lg"
                   onClick={revealNextWord}
                 >
-                  Next word ({MAX_WORD_REVEALS - wordsShown} left)
+                  {t('nextWord', { n: MAX_WORD_REVEALS - wordsShown })}
                 </Button>
                 <Button
                   variant="recall"
@@ -192,11 +194,11 @@ export function ReviewCard({ item, onRate, isLoading }: ReviewCardProps) {
                   className="gap-2"
                 >
                   <Eye className="w-5 h-5" />
-                  Reveal Text
+                  {t('revealText')}
                 </Button>
               </div>
               <p className="mt-3 text-sm text-muted-foreground">
-                Try to recall the rest from the opening words, then reveal to check
+                {t('recallHint')}
               </p>
             </div>
           )}
@@ -206,13 +208,13 @@ export function ReviewCard({ item, onRate, isLoading }: ReviewCardProps) {
             <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
               {item.translation && (
                 <div className="p-4 bg-muted/50 rounded-lg">
-                  <p className="text-muted-foreground text-sm mb-1">Translation</p>
+                  <p className="text-muted-foreground text-sm mb-1">{t('translation')}</p>
                   <p className="text-foreground">{item.translation}</p>
                 </div>
               )}
               {item.source && (
                 <p className="text-sm text-muted-foreground text-center">
-                  Source: {item.source}
+                  {t('source')}: {item.source}
                 </p>
               )}
             </div>
@@ -224,7 +226,7 @@ export function ReviewCard({ item, onRate, isLoading }: ReviewCardProps) {
       {revealed && (
         <div className="space-y-3 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100">
           <p className="text-center text-sm text-muted-foreground">
-            How well did you remember?
+            {t('howWell')}
           </p>
           <div className="grid grid-cols-4 gap-2">
             <Button
@@ -233,7 +235,7 @@ export function ReviewCard({ item, onRate, isLoading }: ReviewCardProps) {
               disabled={isLoading}
               className="flex-col h-auto py-3"
             >
-              <span className="text-xs font-medium">Again</span>
+              <span className="text-xs font-medium">{t('again')}</span>
               <span className="text-[10px] opacity-70">{estimatedIntervals[0]}</span>
             </Button>
             <Button
@@ -242,7 +244,7 @@ export function ReviewCard({ item, onRate, isLoading }: ReviewCardProps) {
               disabled={isLoading}
               className="flex-col h-auto py-3"
             >
-              <span className="text-xs font-medium">Hard</span>
+              <span className="text-xs font-medium">{t('hard')}</span>
               <span className="text-[10px] opacity-70">{estimatedIntervals[1]}</span>
             </Button>
             <Button
@@ -251,7 +253,7 @@ export function ReviewCard({ item, onRate, isLoading }: ReviewCardProps) {
               disabled={isLoading}
               className="flex-col h-auto py-3"
             >
-              <span className="text-xs font-medium">Good</span>
+              <span className="text-xs font-medium">{t('good')}</span>
               <span className="text-[10px] opacity-70">{estimatedIntervals[2]}</span>
             </Button>
             <Button
@@ -260,7 +262,7 @@ export function ReviewCard({ item, onRate, isLoading }: ReviewCardProps) {
               disabled={isLoading}
               className="flex-col h-auto py-3"
             >
-              <span className="text-xs font-medium">Easy</span>
+              <span className="text-xs font-medium">{t('easy')}</span>
               <span className="text-[10px] opacity-70">{estimatedIntervals[3]}</span>
             </Button>
           </div>
