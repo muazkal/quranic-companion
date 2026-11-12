@@ -1,3 +1,4 @@
+import { useLanguage } from '@/contexts/LanguageContext';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -25,6 +26,7 @@ import type { Tables } from '@/integrations/supabase/types';
 type MemorizationItem = Tables<'memorization_items'>;
 
 export function LibraryPage() {
+  const { t } = useLanguage();
   const { user } = useAuthContext();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
@@ -71,10 +73,10 @@ export function LibraryPage() {
       if (error) throw error;
 
       setItems(items.filter(item => item.id !== deleteId));
-      toast({ title: 'Item deleted', description: 'The item has been removed from your library.' });
+      toast({ title: t('itemDeleted'), description: t('itemDeletedDesc') });
     } catch (error: any) {
       toast({
-        title: 'Error',
+        title: t('error'),
         description: error.message,
         variant: 'destructive',
       });
@@ -119,14 +121,14 @@ export function LibraryPage() {
             <Library className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <h1 className="text-2xl font-serif font-semibold">Library</h1>
-            <p className="text-sm text-muted-foreground">{items.length} items</p>
+            <h1 className="text-2xl font-serif font-semibold">{t('library')}</h1>
+            <p className="text-sm text-muted-foreground">{t('itemsN', { n: items.length })}</p>
           </div>
         </div>
         <Link to="/add">
           <Button className="gap-2">
             <Plus className="w-4 h-4" />
-            Add Item
+            {t('addItem')}
           </Button>
         </Link>
       </div>
@@ -136,7 +138,7 @@ export function LibraryPage() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
-            placeholder="Search items..."
+            placeholder={t('searchItems')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-10"
@@ -144,13 +146,13 @@ export function LibraryPage() {
         </div>
         <Select value={typeFilter} onValueChange={setTypeFilter}>
           <SelectTrigger className="w-full sm:w-40">
-            <SelectValue placeholder="All types" />
+            <SelectValue placeholder={t('allTypes')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Types</SelectItem>
-            <SelectItem value="hadith">Hadith</SelectItem>
-            <SelectItem value="quran">Qur'an</SelectItem>
-            <SelectItem value="scholar">Scholar</SelectItem>
+            <SelectItem value="all">{t('allTypes')}</SelectItem>
+            <SelectItem value="hadith">{t('hadith')}</SelectItem>
+            <SelectItem value="quran">{t('quran')}</SelectItem>
+            <SelectItem value="scholar">{t('scholar')}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -172,8 +174,8 @@ export function LibraryPage() {
           <div className="w-16 h-16 mx-auto mb-4 bg-muted rounded-full flex items-center justify-center">
             <Library className="w-8 h-8 text-muted-foreground" />
           </div>
-          <h2 className="text-lg font-semibold mb-1">Your library is empty</h2>
-          <p className="text-muted-foreground mb-4">Add your first memorization item to get started</p>
+          <h2 className="text-lg font-semibold mb-1">{t('libraryEmpty')}</h2>
+          <p className="text-muted-foreground mb-4">{t('addFirstStart')}</p>
           <Link to="/add">
             <Button className="gap-2">
               <Plus className="w-4 h-4" />
@@ -183,7 +185,7 @@ export function LibraryPage() {
         </div>
       ) : (
         <div className="text-center py-12">
-          <p className="text-muted-foreground">No items match your search</p>
+          <p className="text-muted-foreground">{t('noMatch')}</p>
         </div>
       )}
 
@@ -191,15 +193,15 @@ export function LibraryPage() {
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete this item?</AlertDialogTitle>
+            <AlertDialogTitle>{t('deleteQ')}</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the item and all its review history.
+              {t('deleteDesc')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Delete
+              {t('delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

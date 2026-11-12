@@ -1,3 +1,5 @@
+import { useLanguage } from '@/contexts/LanguageContext';
+import { LanguageToggle } from '@/components/LanguageToggle';
 import { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { BookOpen, Plus, LayoutDashboard, Library, LogOut, Flame } from 'lucide-react';
@@ -10,14 +12,15 @@ interface LayoutProps {
 }
 
 export function Layout({ children }: LayoutProps) {
+  const { t } = useLanguage();
   const { signOut } = useAuthContext();
   const location = useLocation();
 
   const navItems = [
-    { href: '/', icon: LayoutDashboard, label: 'Dashboard' },
-    { href: '/review', icon: Flame, label: 'Review' },
-    { href: '/library', icon: Library, label: 'Library' },
-    { href: '/add', icon: Plus, label: 'Add' },
+    { href: '/', icon: LayoutDashboard, label: t('navDashboard') },
+    { href: '/review', icon: Flame, label: t('navReview') },
+    { href: '/library', icon: Library, label: t('navLibrary') },
+    { href: '/add', icon: Plus, label: t('navAdd') },
   ];
 
   return (
@@ -32,6 +35,7 @@ export function Layout({ children }: LayoutProps) {
             <span className="font-serif text-xl font-semibold">راجع | Revise</span>
           </Link>
           
+          <LanguageToggle className="md:hidden" />
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-1">
             {navItems.map((item) => (
@@ -47,6 +51,7 @@ export function Layout({ children }: LayoutProps) {
               </Link>
             ))}
             <div className="w-px h-6 bg-border mx-2" />
+            <LanguageToggle />
             <Button variant="ghost" size="sm" onClick={() => signOut()}>
               <LogOut className="w-4 h-4" />
             </Button>
