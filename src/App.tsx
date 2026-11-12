@@ -7,16 +7,20 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import { ResetPassword } from "./pages/ResetPassword";
+import { HelmetProvider } from 'react-helmet-async';
+import { PageMetadata } from '@/components/PageMetadata';
 
 const queryClient = new QueryClient();
 
 const App = () => (
+  <HelmetProvider>
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <AuthProvider>
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <PageMetadata />
           <Routes>
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/*" element={<Index />} />
@@ -25,6 +29,7 @@ const App = () => (
       </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
+  </HelmetProvider>
 );
 
 export default App;
